@@ -1,4 +1,4 @@
-# World of Coasters · v0.6 "Grand Stations"
+# World of Coasters · v0.7 "Real People"
 
 PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build step.
 
@@ -21,6 +21,17 @@ PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build ste
 | 09 | Atlantis Deep Dive (Ocean World) | Sunset pier, 100 m dive through the surface, Gate of Atlantis, glowing sunken city, hydro-jet launch |
 
 Portal 10, **The Ultimate World Tour**, is still marked Coming Soon.
+
+## v0.7 changes
+
+**Realistic NPCs up close.** The nearest park guests, staff and riders now become a fully textured, realistically proportioned 3D human: the "Michelle" sample character from Three.js, rigged with the Mixamo skeleton.
+- **Smart swapping:** the people closest to you (10 on Ultra, 6 on High, 3 on Performance) switch to the realistic model. Everyone farther away stays the lightweight crowd, so frame rates hold up on Quest.
+- **Real motion:** walk, idle and talking animations from the Mixamo animation set. The game converts them on load from the source skeleton into Michelle's bone frames, so poses come out natural.
+- **Variety:** a recolor shader changes each person's outfit hue, saturation and pants color, and varies skin tone, so the copies don't all look identical.
+- **Riders** sit with knees bent and raise their arms on drops. Staff look and wave.
+- **Files:** the models live in `assets/models/` (`michelle.glb` 3.2 MB, `anims.glb` 0.9 MB) and load in the background after you enter the park.
+
+**Licensing note:** Michelle and the animation set come from Adobe Mixamo by way of the three.js example repository. Mixamo lets you use them inside games, including commercially, but not resell or redistribute the raw model files as standalone assets. Hosting them in this game's repository to run the game is the same thing the three.js examples do. Before any app-store or commercial launch, swap in characters you own (for example from Ready Player Me, or Higgsfield image-to-3D at about 35 credits per rigged character). The code accepts any Mixamo-rigged GLB.
 
 ## v0.6 changes
 
@@ -138,7 +149,8 @@ Local test: `python3 -m http.server 4173` in this folder, then open http://local
 ## Known limits
 - Tested in a headless desktop browser (all worlds, ride flow, arcade). **Not yet tested on a physical Quest 3.** Start on the **High** graphics setting there.
 - Couldn't verify the Higgsfield backdrops end to end. The sky shader was tested with a local image, but the CDN images couldn't be fetched from the build workspace. If the CDN refuses cross-site loading, put the images in `assets/skies/` as described above.
-- People are modeled in code. For photoreal humans, the next step is rigged character models (Mixamo / Ready Player Me).
+- Only women have a realistic model so far, since the free samples include just one civilian character. Men and children are still the code-built crowd, even up close. Adding more Mixamo-rigged GLBs to `assets/models/` will extend the realistic set.
+- The sitting pose and the wave gesture weren't checked from every angle.
 - Walking has simple boundaries; guests don't steer around you.
 - Bloom and the cinematic grade are desktop/phone only; in a VR headset the scene renders without those passes.
 - Party play was tested between two browser windows on a local test server, not between two real devices on the internet. Home networks with strict firewalls can occasionally block direct connections.

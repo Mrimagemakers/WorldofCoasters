@@ -125,6 +125,8 @@ import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 /* ============================================================
    WORLD OF COASTERS · Grand Central + 3 worlds · v0.2
@@ -1282,13 +1284,13 @@ class Crowd{
   const knitD=perf?dbl:rimShader(new THREE.MeshPhysicalMaterial({vertexColors:true,map:rep(kn.map,2,1),normalMap:rep(kn.nrm,2,1),normalScale:new THREE.Vector2(.6,.6),roughness:.88,sheen:.7,side:THREE.DoubleSide}),[.6,.6,.65],.12,'knitD');
   const MAT={head:skin,hand:skin,eyes:eyeM,brows:hair,beard:hair,hCrop:hair,hFade:hair,hLong:hair,hPony:hair,hBun:hair,hAfro:hair,hBraids:hair,glasses:gloss,phone:gloss,shoe:plain,sole:plain,skirt:dbl,sleeve:knitD,shortsLeg:dbl,uArm:skin,fArm:skin,thigh:skin,shin:skin,pelvis:denim,thighC:denim,shinC:denim,backpack:denim};
   const GG=Object.assign({},G,{uArmC:G.uArm,fArmC:G.fArm,thighC:G.thigh,shinC:G.shin});this.m={};for(const k of Object.keys(GG)){const n=PAIRED.has(k)?cap*2:cap;const im=new THREE.InstancedMesh(GG[k],MAT[k]||cloth,Math.max(1,n));im.count=0;im.frustumCulled=false;im.castShadow=k!=='eyes'&&k!=='brows';im.receiveShadow=true;root.add(im);this.m[k]=im;}
-  this.c=new THREE.Color();}
+  this.c=new THREE.Color();this.heroes=new HeroPool(root,HERO_N[settings.quality]||6);}
  slot(k){return this.m[k].count++;}
  part(p,k,hex){const i=this.slot(k);if(PAIRED.has(k)){this.slot(k);this.m[k].setColorAt(i,this.c.setHex(hex[0]??hex));this.m[k].setColorAt(i+1,this.c.setHex(hex[1]??hex[0]??hex));}else this.m[k].setColorAt(i,this.c.setHex(hex));p.parts.push([k,i]);}
  add(o){if(this.people.length>=this.cap)return null;const r=this.r,pal=PAL[o.pal]||PAL.hub,pick=a=>a[Math.floor(r()*a.length)];
   const p=Object.assign({x:0,y:0,z:0,yaw:0,phase:r()*TAU,seed:r()*100,speed:1.2,mode:'idle',arms:0,gest:null,gestT:0,look:0,parts:[],act:'stand'},o);
-  const staff=o.staff,fem=o.fem??r()<.5;p.scale=o.kid?.58+r()*.1:(fem?.92:.97)+r()*.1;p.build=o.kid?.95:.88+r()*.3;p.headS=o.kid?1.16:1;
-  const skin=pick(SKIN),hc=r()<.08?pick(HAIRC.slice(8)):pick(HAIRC.slice(0,8)),shirt=staff?STAFF.shirt:pick(pal.shirt),pants=staff?STAFF.pants:pick(pal.pants);
+  const staff=o.staff,fem=o.fem??r()<.5;p.fem=fem;p.kid=!!o.kid;p.staff=!!staff;p.scale=o.kid?.58+r()*.1:(fem?.92:.97)+r()*.1;p.build=o.kid?.95:.88+r()*.3;p.headS=o.kid?1.16:1;
+  const skin=pick(SKIN);p.skin=skin;const hc=r()<.08?pick(HAIRC.slice(8)):pick(HAIRC.slice(0,8)),shirt=staff?STAFF.shirt:pick(pal.shirt),pants=staff?STAFF.pants:pick(pal.pants);
   const shorts=!staff&&r()<pal.shorts,skirt=!staff&&fem&&!o.rider&&!o.kid&&r()<.28,longSl=staff||r()<.3,shoe=staff?0x1b1b1b:pick(SHOES);
   this.part(p,fem?'torsoF':'torsoM',shirt);this.part(p,'pelvis',skirt?shirt:pants);this.part(p,'head',skin);this.part(p,'eyes',0xffffff);this.part(p,'brows',hc);
   this.part(p,longSl?'uArmC':'uArm',longSl?shirt:skin);this.part(p,'sleeve',shirt);this.part(p,longSl?'fArmC':'fArm',longSl?shirt:skin);this.part(p,'hand',skin);
@@ -1320,10 +1322,11 @@ class Crowd{
     if(p.tag)p.tag.visible=!p.hidden;}
    if(p.mode==='walk')p.phase+=dt*p.speed*TAU/(1.4*p.scale);
    const tgt=p.lookT!==undefined&&p.mode!=='walk'?clamp(((p.lookT-p.yaw+Math.PI*3)%TAU)-Math.PI,-1,1):Math.sin(t*.3+p.seed)*.35;p.look=lerp(p.look,tgt,Math.min(1,dt*2));
-   p.gestT-=dt;this.pose(p,t);if(p.tag&&!p.hidden){_pp.setFromMatrixPosition(J.head);p.tag.position.set(_pp.x,_pp.y+.42,_pp.z);}}
+   p.gestT-=dt;this.pose(p,t);if(p.tag&&!p.hidden){if(p.heroed)p.tag.position.set(p.x,p.y+2.1*p.scale,p.z);else{_pp.setFromMatrixPosition(J.head);p.tag.position.set(_pp.x,_pp.y+.42,_pp.z);}}}
+  if(HERO.state==='ready'&&ctx?.cam){this.heroes.assign(this.people,ctx.cam);this.heroes.update(dt);}
   for(const im of Object.values(this.m))im.instanceMatrix.needsUpdate=true;}
  pose(p,t){const m=this.m;
-  if(p.hidden){for(const [k,i] of p.parts){m[k].setMatrixAt(i,_zero);if(PAIRED.has(k))m[k].setMatrixAt(i+1,_zero);}return;}
+  if(p.hidden||p.heroed){for(const [k,i] of p.parts){m[k].setMatrixAt(i,_zero);if(PAIRED.has(k))m[k].setMatrixAt(i+1,_zero);}return;}
   const root=J.root;let pelY=.98,sway=0,lean=.03,twist=0,nod=0,roll=0,hipX=0;const L=[{},{}];const s7=Math.sin(t*.35+p.seed);
   if(p.mode==='sit'){_pm.makeScale(p.scale,p.scale,p.scale);root.multiplyMatrices(p.base,_pm);pelY=0;lean=-.12-.15*p.arms;nod=-.25*p.arms;}
   else{_pe.set(0,p.yaw,0);_pq.setFromEuler(_pe);_pp.set(p.x,p.y,p.z);_ps.set(p.scale,p.scale,p.scale);root.compose(_pp,_pq,_ps);_ps.set(1,1,1);}
@@ -1349,6 +1352,81 @@ class Crowd{
    if(PAIRED.has(k)){for(const si of [0,1]){let M=J[j][si];if(BUILD.has(k)){_bo.multiplyMatrices(M,_bm);M=_bo;}m[k].setMatrixAt(i+si,M);}}
    else{let M=j==='hd1'?J.hd[1]:J[j];if(j==='head'&&p.headS!==1){_pm.makeScale(p.headS,p.headS,p.headS);_bo.multiplyMatrices(M,_pm);M=_bo;}else if(BUILD.has(k)){_bo.multiplyMatrices(M,_bm);M=_bo;}m[k].setMatrixAt(i,M);}}}
 }
+/* ============================================================
+   HERO NPCs · realistic rigged characters near the camera (Three.js "Michelle" sample, Mixamo rig)
+   The nearest women / riders swap from the lightweight crowd to a textured skinned model with
+   real walk + idle animation. Outfit hue and skin tone vary per person via a recolor shader.
+   ============================================================ */
+const HERO={state:'idle',base:null,clips:{},height:1,promise:null};
+const HERO_N={ultra:10,high:6,performance:3};
+function retargetClip(srcRoot,clip,tgtRoot){const Q=THREE.Quaternion,srcB={},tgtB={};
+ srcRoot.traverse(o=>{if(o.name&&o.name.startsWith('mixamorig'))srcB[o.name]=o;});tgtRoot.traverse(o=>{if(o.isBone)tgtB[o.name]=o;});
+ const depth=o=>{let d=0;while(o.parent){d++;o=o.parent;}return d;};const names=Object.keys(tgtB).filter(n=>srcB[n]).sort((x,y)=>depth(tgtB[x])-depth(tgtB[y]));
+ srcRoot.updateMatrixWorld(true);tgtRoot.updateMatrixWorld(true);const sRest={},tRest={},tRestLocal={};for(const n of names){sRest[n]=srcB[n].getWorldQuaternion(new Q()).invert();tRest[n]=tgtB[n].getWorldQuaternion(new Q());tRestLocal[n]=tgtB[n].quaternion.clone();}
+ const hipS=srcB.mixamorigHips,hipT=tgtB.mixamorigHips,sHip0=hipS.getWorldPosition(new V3()),tHip0=hipT.getWorldPosition(new V3()),ratio=tHip0.y/Math.max(1e-3,sHip0.y),hipPar=hipT.parent;
+ const mixer=new THREE.AnimationMixer(srcRoot),act=mixer.clipAction(clip);act.play();const fps=30,N=Math.max(2,Math.ceil(clip.duration*fps)+1),times=new Float32Array(N),out={},hp=new Float32Array(N*3),G={},prev={};for(const n of names)out[n]=new Float32Array(N*4);
+ const wq=new Q(),pg=new Q(),loc=new Q(),wp=new V3();
+ for(let f=0;f<N;f++){const t=Math.min(clip.duration,f/fps);times[f]=t;mixer.setTime(t);srcRoot.updateMatrixWorld(true);
+  for(const n of names){srcB[n].getWorldQuaternion(wq);const g=(G[n]||(G[n]=new Q())).copy(wq).multiply(sRest[n]).multiply(tRest[n]);const par=tgtB[n].parent;
+   if(par&&G[par.name])pg.copy(G[par.name]);else par.getWorldQuaternion(pg);loc.copy(pg).invert().multiply(g);if(prev[n]&&prev[n].dot(loc)<0)loc.set(-loc.x,-loc.y,-loc.z,-loc.w);(prev[n]||(prev[n]=new Q())).copy(loc);loc.toArray(out[n],f*4);}
+  hipS.getWorldPosition(wp);const dy=(wp.y-sHip0.y)*ratio;wp.set(tHip0.x,tHip0.y+dy,tHip0.z);hipPar.worldToLocal(wp);wp.toArray(hp,f*3);}
+ act.stop();mixer.uncacheRoot(srcRoot);const tracks=names.map(n=>new THREE.QuaternionKeyframeTrack(n+'.quaternion',times,out[n]));tracks.push(new THREE.VectorKeyframeTrack('mixamorigHips.position',times,hp));
+ return new THREE.AnimationClip(clip.name,clip.duration,tracks);}
+function loadHeroes(){if(HERO.promise)return HERO.promise;HERO.state='loading';const L=new GLTFLoader();
+ HERO.promise=Promise.all([L.loadAsync('assets/models/michelle.glb'),L.loadAsync('assets/models/anims.glb')]).then(([m,a])=>{
+  HERO.base=m.scene;for(const c of a.animations)if(['idle','walk','agree'].includes(c.name))HERO.clips[c.name]=retargetClip(a.scene,c,m.scene);
+  m.scene.updateMatrixWorld(true);const bb=new THREE.Box3().setFromObject(m.scene);HERO.height=bb.max.y-bb.min.y;HERO.minY=bb.min.y;
+  m.scene.traverse(o=>{if(o.isSkinnedMesh){o.frustumCulled=false;HERO.srcMat=o.material;for(const t of ['map','normalMap','roughnessMap'])if(o.material[t])o.material[t].userData.keep=true;}});HERO.state='ready';return HERO;}).catch(e=>{console.warn('hero load failed',e);HERO.state='failed';});
+ return HERO.promise;}
+function heroMaterial(src){const m=new THREE.MeshPhysicalMaterial({map:src.map,normalMap:src.normalMap,roughnessMap:src.roughnessMap||null,roughness:.72,metalness:0,sheen:.45,sheenRoughness:.6,sheenColor:new THREE.Color(0x998877)});
+ m.userData.u={uHue:{value:0},uSat:{value:1},uSkin:{value:new THREE.Color(0x8d5a36)},uSkinAmt:{value:0},uPants:{value:0}};
+ m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,m.userData.u);
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>',`#include <common>
+uniform float uHue,uSat,uSkinAmt,uPants;uniform vec3 uSkin;
+vec3 rgb2hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));float d=q.x-min(q.w,q.y);float e=1.e-10;return vec3(abs(q.z+(q.w-q.y)/(6.*d+e)),d/(q.x+e),q.x);}
+vec3 hsv2rgb(vec3 c){vec4 K=vec4(1.,2./3.,1./3.,3.);vec3 p=abs(fract(c.xxx+K.xyz)*6.-K.www);return c.z*mix(K.xxx,clamp(p-K.xxx,0.,1.),c.y);}`)
+  .replace('#include <map_fragment>',`#ifdef USE_MAP
+ vec4 sampledDiffuseColor=texture2D(map,vMapUv);
+ vec3 lin=sampledDiffuseColor.rgb; vec3 sr=pow(lin,vec3(1./2.2)); vec3 h=rgb2hsv(sr);
+ float skin=smoothstep(.015,.035,h.x)*(1.-smoothstep(.1,.125,h.x))*smoothstep(.18,.3,h.y)*(1.-smoothstep(.66,.74,h.y))*smoothstep(.12,.22,h.z);
+ float cloth=smoothstep(.38,.5,h.y)*(1.-skin)*smoothstep(.1,.2,h.z);
+ float yellow=smoothstep(.1,.13,h.x)*(1.-smoothstep(.2,.24,h.x))*cloth;
+ vec3 hc=h; hc.x=fract(h.x+uHue+yellow*uPants); hc.y=clamp(h.y*uSat,0.,1.);
+ vec3 outS=mix(sr,hsv2rgb(hc),cloth);
+ float lum=dot(sr,vec3(.3,.59,.11)),tl=dot(pow(uSkin,vec3(1./2.2)),vec3(.3,.59,.11));
+ outS=mix(outS,pow(uSkin,vec3(1./2.2))*(lum/max(tl,.05))*.92,skin*uSkinAmt);
+ sampledDiffuseColor.rgb=pow(outS,vec3(2.2)); diffuseColor*=sampledDiffuseColor;
+#endif`)
+  .replace('#include <lights_fragment_end>',`#include <lights_fragment_end>
+ { float ndv=clamp(dot(normal,geometryViewDir),0.,1.); reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(.22,.08,.05)*pow(1.-ndv,2.)*.9; }`);};
+ m.customProgramCacheKey=()=>'woc-hero';return m;}
+const SIT={mixamorigLeftUpLeg:[-1.5,0,-.08],mixamorigRightUpLeg:[-1.5,0,.08],mixamorigLeftLeg:[1.45,0,0],mixamorigRightLeg:[1.45,0,0],mixamorigSpine:[.05,0,0]};
+class HeroPool{
+ constructor(root,n){this.root=root;this.n=n;this.slots=[];this.hc=new THREE.Color();}
+ ensure(){if(this.slots.length||HERO.state!=='ready')return;for(let i=0;i<this.n;i++){const o=SkeletonUtils.clone(HERO.base);const mat=heroMaterial(HERO.srcMat);const bones={};
+   o.traverse(c=>{if(c.isSkinnedMesh){c.material=mat;c.castShadow=true;c.receiveShadow=true;c.frustumCulled=false;}if(c.isBone)bones[c.name]=c;});o.visible=false;this.root.add(o);
+   const mixer=new THREE.AnimationMixer(o),idle=mixer.clipAction(HERO.clips.idle),walk=mixer.clipAction(HERO.clips.walk),talk=HERO.clips.agree?mixer.clipAction(HERO.clips.agree):null;
+   idle.play();walk.play();walk.setEffectiveWeight(0);if(talk){talk.play();talk.setEffectiveWeight(0);}
+   const rest={};for(const k in bones)rest[k]=bones[k].quaternion.clone();this.slots.push({o,mat,mixer,idle,walk,talk,bones,rest,p:null,w:0});}}
+ assign(people,cam){this.ensure();if(!this.slots.length)return;const cand=[];for(const p of people){if(!p.fem||p.kid||(p.hidden&&!p.heroed))continue;if(p.role==='rider'&&p.hiddenSeat)continue;const d=Math.hypot(p.x-cam.x,p.z-cam.z);p._d=p.mode==='sit'&&p.base?_pp.setFromMatrixPosition(p.base).distanceTo(cam):d;if(p._d<45)cand.push(p);}
+  cand.sort((a,b)=>a._d-b._d);const want=new Set(cand.slice(0,this.n));
+  for(const s of this.slots)if(s.p&&!want.has(s.p)){s.p.heroed=false;s.p=null;s.o.visible=false;}
+  for(const p of want){if(this.slots.some(s=>s.p===p))continue;const s=this.slots.find(s=>!s.p);if(!s)break;s.p=p;p.heroed=true;s.o.visible=true;
+   const u=s.mat.userData.u,r=(p.seed*9301%1+1)%1;u.uHue.value=p.staff?.58:((p.seed*.6180339)%1);u.uSat.value=p.staff?.55:.8+r*.5;u.uPants.value=p.staff?.0:r>.5?.45:0;u.uSkin.value.setHex(p.skin||0x8d5a36);u.uSkinAmt.value=.85;}}
+ update(dt){for(const s of this.slots){const p=s.p;if(!p)continue;if(p.hidden&&p.role!=='remote'){s.o.visible=false;continue;}s.o.visible=true;const k=p.scale*1.68/HERO.height;
+   if(p.mode==='sit'&&p.base){s.o.matrixAutoUpdate=false;_pm.makeTranslation(0,-.9*p.scale,.06);s.o.matrix.copy(p.base).multiply(_pm);_bo.makeRotationY(Math.PI);s.o.matrix.multiply(_bo);_bo.makeScale(k,k,k);s.o.matrix.multiply(_bo);
+    s.mixer.update(0);for(const [b,e] of Object.entries(SIT)){const bn=s.bones[b];if(bn){_e.set(e[0],e[1],e[2]);_q.setFromEuler(_e);bn.quaternion.copy(s.rest[b]).multiply(_q);}}
+    const a=p.arms||0;for(const [b,sd] of [['mixamorigLeftArm',1],['mixamorigRightArm',-1]]){const bn=s.bones[b];if(bn){_e.set(0,0,sd*(-.2+a*-1.9));_q.setFromEuler(_e);bn.quaternion.multiply(_q);}}
+    for(const [b,sd] of [['mixamorigLeftForeArm',1],['mixamorigRightForeArm',-1]]){const bn=s.bones[b];if(bn){_e.set(0,sd*(1.2-a*1.1),0);_q.setFromEuler(_e);bn.quaternion.multiply(_q);}}
+    continue;}
+   s.o.matrixAutoUpdate=true;s.o.position.set(p.x,p.y,p.z);s.o.rotation.set(0,p.yaw+Math.PI,0);s.o.scale.setScalar(k);
+   const walking=p.mode==='walk'?1:0;s.w=lerp(s.w,walking,Math.min(1,dt*5));s.walk.setEffectiveWeight(s.w);s.idle.setEffectiveWeight((1-s.w)*(p.act==='talk'&&s.talk?.4:1));if(s.talk)s.talk.setEffectiveWeight((1-s.w)*(p.act==='talk'?.6:0));
+   s.walk.timeScale=clamp((p.speed||1.2)/1.35,.5,1.6);s.mixer.update(dt);
+   if(p.gestT>0&&(p.gest==='wave'||p.gest==='point')){const bn=s.bones.mixamorigRightArm,fa=s.bones.mixamorigRightForeArm;if(bn){_e.set(0,0,p.gest==='wave'?-2.3:-1.3);_q.setFromEuler(_e);bn.quaternion.multiply(_q);}if(fa&&p.gest==='wave'){_e.set(0,-.4-.4*Math.sin(performance.now()/110),0);_q.setFromEuler(_e);fa.quaternion.multiply(_q);}}
+   const hd=s.bones.mixamorigHead;if(hd&&p.look){_e.set(0,p.look*.6,0);_q.setFromEuler(_e);hd.quaternion.multiply(_q);}}}
+ dispose(){for(const s of this.slots){s.mixer.stopAllAction();s.mat.dispose();}}
+}
+
 const CROWD_SCALE={ultra:1,high:.7,performance:.4};
 function addRiders(cr,n,pal){const seats=[];for(let c=0;c<4;c++)for(const row of [-.45,.75])seats.push({car:c,row});for(let k=seats.length-1;k>0;k--){const j=Math.floor(cr.r()*(k+1));[seats[k],seats[j]]=[seats[j],seats[k]];}
  seats.slice(0,n).forEach(s=>cr.add({role:'rider',rider:true,pal,car:s.car,row:s.row,brave:.35+cr.r()*.65}));}
@@ -1757,7 +1835,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 
 /* ---------- start / VR ---------- */
 $('#cover').style.backgroundImage="url('assets/banner-1.jpg')";
-async function start(){if(mode!=='cover')return;$('#cover').classList.add('hidden');Sound.init();try{await document.fonts?.ready;}catch(e){}mode='hub';enterHub();fade=1;fadeTarget=0;if(new URLSearchParams(location.search).get('party'))setTimeout(openParty,800);}
+async function start(){if(mode!=='cover')return;loadHeroes();$('#cover').classList.add('hidden');Sound.init();try{await document.fonts?.ready;}catch(e){}mode='hub';enterHub();fade=1;fadeTarget=0;if(new URLSearchParams(location.search).get('party'))setTimeout(openParty,800);}
 $('#start').onclick=start;{const pc=new URLSearchParams(location.search).get('party');if(pc){const n=$('#inviteNote');n.style.display='block';n.textContent='You\'re invited to ride in party '+pc.toUpperCase()+'! Enter the park to join.';}}
 // Only show ENTER VR on devices that can actually run immersive VR (no "VR NOT SUPPORTED" badge over phone controls)
 (async()=>{let ok=false;try{ok=!!navigator.xr&&await navigator.xr.isSessionSupported('immersive-vr');}catch(e){}if(ok){const vrBtn=VRButton.createButton(renderer);document.body.appendChild(vrBtn);}})();
@@ -1794,7 +1872,7 @@ renderer.setAnimationLoop(()=>{
 });
 applyQuality();renderControls();
 // test/debug hook (harmless in production)
-window.WOC={party:Party,go:id=>transition(()=>enterWorld(id)),hub:()=>transition(enterHub),board,dispatch,act,ride,settings,get W(){return W;},get mode(){return mode;},skip(f){ride.s=(W.st.s+f*W.track.L)%W.track.L;ride.dist=f*W.track.L;},tdbg(i){const t=targets[i];camera.getWorldPosition(_p);return t?{pop:t.pop,vis:t.g.visible,sc:t.g.scale.x,dist:t.g.position.distanceTo(_p),inScene:!!t.g.parent?.parent,rel:t.d-(ride.dist+(1.5-myCar())*CAR_GAP+.45),mode,state:ride.state}:null;},toTarget(i,ahead=25){const t=targets[i];if(!t)return null;const L=W.track.L,eye=(1.5-myCar())*CAR_GAP+.45,dd=t.d-ahead-eye;ride.dist=dd;ride.s=(W.st.s+dd)%L;ride.state='paused';return [t.kind,targets.length];},look(x,z,yaw,pitch){rig.position.x=x;rig.position.z=z;rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,yaw);lookX=0;lookY=pitch;},stats(){const t=W.track;return {L:Math.round(t.L),maxH:Math.round(t.maxHeight()),topKmh:Math.round(t.topSpeed()*3.6),tunnels:t.tag.filter(x=>x==='T').length};}};
+window.WOC={party:Party,heroDbg(){const s=(W?.crowd?.heroes?.slots||[]).find(s=>s.p);if(!s)return null;const tr=HERO.clips.walk.tracks.slice(0,4).map(t=>t.name);const bones=Object.keys(s.bones).slice(0,4);return {tr,bones,nb:s.mixer._bindings?.length,run:s.walk.isRunning(),w:s.walk.getEffectiveWeight(),iw:s.idle.getEffectiveWeight(),la:s.bones.mixamorigLeftArm?.quaternion.toArray().map(v=>+v.toFixed(3)),pos:s.o.position.toArray().map(v=>+v.toFixed(1)),p:[+s.p.x.toFixed(1),+s.p.z.toFixed(1)],sc:s.o.scale.x,vis:s.o.visible};},heroCam(d=2.6,i=0){const sl=(W?.crowd?.heroes?.slots||[]).filter(s=>s.p&&s.p.mode!=='sit');const s=sl[i];if(!s)return null;const p=s.p;p.pause=60;p.next=99;p.lookT=undefined;const fx=-Math.sin(p.yaw),fz=-Math.cos(p.yaw);rig.position.set(p.x+fx*d,(W.floorAt?W.floorAt(p.x,p.z):0)+1.6,p.z+fz*d);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,p.yaw+Math.PI);lookX=0;lookY=-.12;mode='frozen';return [p.role,p.mode];},heroes:()=>({state:HERO.state,active:(W?.crowd?.heroes?.slots||[]).filter(s=>s.p).length}),go:id=>transition(()=>enterWorld(id)),hub:()=>transition(enterHub),board,dispatch,act,ride,settings,get W(){return W;},get mode(){return mode;},skip(f){ride.s=(W.st.s+f*W.track.L)%W.track.L;ride.dist=f*W.track.L;},tdbg(i){const t=targets[i];camera.getWorldPosition(_p);return t?{pop:t.pop,vis:t.g.visible,sc:t.g.scale.x,dist:t.g.position.distanceTo(_p),inScene:!!t.g.parent?.parent,rel:t.d-(ride.dist+(1.5-myCar())*CAR_GAP+.45),mode,state:ride.state}:null;},toTarget(i,ahead=25){const t=targets[i];if(!t)return null;const L=W.track.L,eye=(1.5-myCar())*CAR_GAP+.45,dd=t.d-ahead-eye;ride.dist=dd;ride.s=(W.st.s+dd)%L;ride.state='paused';return [t.kind,targets.length];},look(x,z,yaw,pitch){rig.position.x=x;rig.position.z=z;rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,yaw);lookX=0;lookY=pitch;},stats(){const t=W.track;return {L:Math.round(t.L),maxH:Math.round(t.maxHeight()),topKmh:Math.round(t.topSpeed()*3.6),tunnels:t.tag.filter(x=>x==='T').length};}};
 </script>
 </body>
 </html>
