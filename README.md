@@ -1,4 +1,4 @@
-# World of Coasters · v0.7 "Real People"
+# World of Coasters · v0.8 "Park Characters"
 
 PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build step.
 
@@ -21,6 +21,37 @@ PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build ste
 | 09 | Atlantis Deep Dive (Ocean World) | Sunset pier, 100 m dive through the surface, Gate of Atlantis, glowing sunken city, hydro-jet launch |
 
 Portal 10, **The Ultimate World Tour**, is still marked Coming Soon.
+
+## v0.8 changes
+
+**Stylized park guests, based on the character sheets.** Every guest and staff member got a cartoon-style redesign:
+- **Painted faces:** 16 hand-painted faces (eyes with highlights, brows, lashes, freckles, blush, stubble, smile lines) on a single texture atlas, so the whole crowd still renders in one draw call per body part.
+- **Clothing patterns:** 16 printable tops: stripes, tie-dye, "PARK" and "Pretzel & Coasters" graphic tees, plaid, floral dress, polo, hoodie with drawstrings, ringer tee, jersey, safari jacket, reflective staff vest and the navy staff shirt.
+- **New hair and gear:** curly hair, pigtails, side-swept hair, a high ponytail, backwards caps, a butterfly headband, overalls, an apron, lanyards, crossbody bags, neck cameras, binoculars and socks.
+- **Things in hand:** guests carry soda cups, cotton candy, ice cream cones, tablets and balloons; the vendor carries a pretzel tray.
+- **Named characters in Grand Central:** Marcus Daniels with Sam and Maya, Sarah Jin with Lily, Ben Carter with Benny, Sarah Jenners, the Pretzello's vendor at a new pretzel kiosk, Park Guide Sarah, and Leo the squirrel mascot waving by the entrance. Walk within about 6 m to see a name tag.
+- The scanned "Michelle" close-up model from v0.7 is now **off by default** because it clashed with the cartoon look. Turn it on under **Comfort → Realistic close-up guests (beta)**.
+
+**Game controllers.** Xbox, PlayStation (DualSense / DualShock) and any standard Bluetooth or USB gamepad work on desktop, phone and Quest:
+| Button | Action |
+|---|---|
+| Left stick (click = sprint) | Walk |
+| Right stick | Look (snap turn in VR) |
+| A / ✕ | Start, board, dispatch, resume, enter the portal you're facing |
+| B / ○ | Back: exit the train or return to Grand Central; closes menus |
+| X / □ | Change seat |
+| Y / △ | Scenic / Arcade mode |
+| RT / R2 or RB / R1 | Fire (arcade) |
+| LT / L2 (hold) | Duck the gates |
+| LB / L1 | Night ride |
+| Menu / Options | Pause the ride, or open Comfort |
+| View / Share | Portal Directory (hub) or Grand Central |
+| R3 | Horizon lock |
+| D-pad + A | Move through menus and pick |
+
+The on-screen help switches to controller glyphs when a pad is connected, and the controller rumbles on dispatch and shots.
+
+**Drop-in Sketchfab models.** `assets/sketchfab/` now takes any `.glb` (Sketchfab downloads included). List each file in `assets/sketchfab/manifest.json` with where it goes, its height and its animation, and the game places, scales and animates it. Characters can stand and idle or stroll the plaza. Credits from the manifest appear under **Comfort → 3D model credits**. See `assets/sketchfab/README.md`.
 
 ## v0.7 changes
 
@@ -121,22 +152,22 @@ Hits explode in a burst with a floating score; the combo multiplier goes up to �
 
 ## Controls
 
-| | Desktop | Mobile | Meta Quest 3 |
-|---|---|---|---|
-| Walk | WASD / arrows (Shift = faster) | on-screen stick | left stick |
-| Look | drag | drag | your head |
-| Turn | drag | drag | right stick (snap) |
-| Enter portal | walk in or click it | walk in / Portal Directory | walk in, or point + trigger |
-| Board / Dispatch | B | button | A |
-| Pause | P | button | A (while riding) |
-| Change seat | V | button | X |
-| Exit train (docked) | X | button | X (while docked) |
-| Scenic / Arcade | M | button | Y |
-| Fire | Space or click | tap | trigger |
-| Duck | hold C | hold Duck | duck for real |
-| Night Ride (once unlocked) | N | button | n/a |
-| Back to Grand Central | H / Esc | button | B |
-| Intensity / Horizon lock | Comfort panel | Comfort panel | left / right stick click |
+| | Desktop | Mobile | Meta Quest 3 | Gamepad (Xbox / PS) |
+|---|---|---|---|---|
+| Walk | WASD / arrows (Shift = faster) | on-screen stick | left stick | left stick (L3 = faster) |
+| Look | drag | drag | your head | right stick |
+| Turn | drag | drag | right stick (snap) | right stick |
+| Enter portal | walk in or click it | walk in / Portal Directory | walk in, or point + trigger | walk in, or face it + A/✕ |
+| Board / Dispatch | B | button | A | A / ✕ |
+| Pause | P | button | A (while riding) | Menu / Options |
+| Change seat | V | button | X | X / □ |
+| Exit train (docked) | X | button | X (while docked) | B / ○ |
+| Scenic / Arcade | M | button | Y | Y / △ |
+| Fire | Space or click | tap | trigger | RT / R2 |
+| Duck | hold C | hold Duck | duck for real | hold LT / L2 |
+| Night Ride (once unlocked) | N | button | n/a | LB / L1 |
+| Back to Grand Central | H / Esc | button | B | B / ○ or View / Share |
+| Intensity / Horizon lock | Comfort panel | Comfort panel | left / right stick click | Comfort panel / R3 |
 
 ## Deploy (GitHub Pages)
 
