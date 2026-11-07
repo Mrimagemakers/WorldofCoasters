@@ -55,7 +55,7 @@ The on-screen help switches to controller glyphs when a pad is connected, and th
 - **Grand Central:** four guests stroll the plaza; one waits at the Pretzello's counter; one watches the portals; a security officer stands by the entrance; the red-hooded knight greets riders near the far portals.
 - **Stations:** guests wait on every platform, the security officer patrols the Great Wall, Rome, Taj Mahal and Galactic stations, and the knight appears in Rome and the Great Wall.
 - **Night Ride scare actors:** the phantom, demon, zombies and monster only appear on the platform when Night Ride is on (unlocked by finding all 3 relics in a world).
-- Their rigs had the arms stuck out in a T, so the game points the arms, forearms and legs in the right directions every frame and adds a walking stride and arm swing.
+- Their rigs had the arms stuck out in a T and their Porch War fight clips twisted the limbs, so the game ignores those clips. Each frame it starts from the rig's rest pose and swings the arms and legs on their natural hinges: knees bend backward during the step, elbows stay soft, arms swing opposite the legs, and the body bobs slightly. Standing characters breathe and keep relaxed arms.
 - Ultra loads every character; High caps each world at 8; Performance caps it at 4.
 - Placement, height and which world each one appears in all live in `assets/sketchfab/manifest.json`.
 - These are your own files from Porch War. If any came from a marketplace or Mixamo, check its license before a commercial release.

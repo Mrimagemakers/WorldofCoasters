@@ -1803,28 +1803,38 @@ async function spawnImports(id,root){const myRoot=root;IMPORTS.live=[];const lis
   wrap.position.set(px,(e.y??(W?.floorAt?W.floorAt(px,pz):(W?.spawn?.y??0))),pz);wrap.rotation.y=py;
   o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;if(c.isSkinnedMesh)c.frustumCulled=false;if(c.material){const ms=Array.isArray(c.material)?c.material:[c.material];for(const m of ms){if(m.map&&QUALITY.tier!=='performance')m.map.anisotropy=8;if(m.roughness!==undefined)m.roughness=Math.max(.45,m.roughness);if(m.metalness!==undefined)m.metalness=Math.min(m.metalness,.2);}}}});
   myRoot.add(wrap);const item={e,wrap,o,mixer:null,walk:null,idle:null,ang:e.ang??Math.atan2(e.z||0,e.x||0),w:0,t:Math.random()*10,bones:null};
-  if(g.animations?.length){item.mixer=new THREE.AnimationMixer(o);const find=n=>n&&g.animations.find(a=>a.name.toLowerCase()===String(n).toLowerCase()||a.name.toLowerCase().includes(String(n).toLowerCase()));
+  if(e.fixPose){item.P=iposeSetup(o);}
+  else if(g.animations?.length){item.mixer=new THREE.AnimationMixer(o);const find=n=>n&&g.animations.find(a=>a.name.toLowerCase()===String(n).toLowerCase()||a.name.toLowerCase().includes(String(n).toLowerCase()));
    const ic=find(e.idle)||find('idle')||g.animations[0],wc=find(e.walk)||find('walk');item.idle=item.mixer.clipAction(ic);item.idle.play();
    if(wc&&wc!==ic&&e.wander){item.walk=item.mixer.clipAction(wc);item.walk.play();item.walk.setEffectiveWeight(0);}item.mixer.update(Math.random()*3);}
-  if(e.fixPose){item.bones={};o.traverse(b=>{if(b.isBone)for(const nm of ['LeftArm','RightArm','LeftForeArm','RightForeArm','LeftHand','RightHand','LeftUpLeg','RightUpLeg','LeftLeg','RightLeg','LeftFoot','RightFoot','Head','Spine2'])if(b.name.endsWith(nm)&&!item.bones[nm])item.bones[nm]=b;});}
   item.r=e.wander||0;item.dir=e.dir||1;item.speed=e.speed||1.1;item.next=4+Math.random()*8;item.pause=e.wander?0:1e9;IMPORTS.live.push(item);}}
-/* Rigs with per-model bone frames: point limbs in world directions (character frame, +Z forward, +X = character's left) */
-const _fa=new THREE.Vector3(),_fb=new THREE.Vector3(),_fq=new THREE.Quaternion(),_fq2=new THREE.Quaternion(),_fo=new THREE.Quaternion(),_ft=new THREE.Vector3();
-function alignBone(B,name,child,dir){const bone=B[name],c=B[child];if(!bone||!c)return;bone.getWorldPosition(_fa);c.getWorldPosition(_fb);_fb.sub(_fa);if(_fb.lengthSq()<1e-8)return;_fb.normalize();_ft.set(dir[0],dir[1],dir[2]).normalize().applyQuaternion(_fo);
- _fq.setFromUnitVectors(_fb,_ft);bone.getWorldQuaternion(_fq2);_fq.multiply(_fq2);bone.parent.getWorldQuaternion(_fq2).invert();bone.quaternion.copy(_fq2.multiply(_fq));bone.updateWorldMatrix(false,true);}
-function poseImport(it,dt){const B=it.bones;it.t+=dt;const t=it.t,w=it.w;it.wrap.getWorldQuaternion(_fo);it.o.updateWorldMatrix(true,true);
- const ph=t*Math.PI*2/1.05,breathe=Math.sin(t*1.7)*.03;
- for(const [side,s] of [['Left',1],['Right',-1]]){const st=Math.sin(ph)*s*w;
-  alignBone(B,side+'Arm',side+'ForeArm',[s*(.2-w*.07),-1,-st*.55+.06+breathe]);
-  alignBone(B,side+'ForeArm',side+'Hand',[s*.06,-1,.25-st*.35+w*.15]);
-  alignBone(B,side+'UpLeg',side+'Leg',[s*.03,-1,st*.42]);
-  alignBone(B,side+'Leg',side+'Foot',[0,-1,Math.max(0,-st)*.55-.02]);}}
+/* Procedural pose for imported rigs (Mixamo-style names, any bone frames).
+   Bones are reset to their rest (T-pose) each frame, then each limb is swung to a world direction in the
+   character's frame (+Z forward, +X = character's left). Knees and elbows only bend on their natural hinge. */
+const IPOSE_NAMES=['Hips','Spine','Spine1','Spine2','Neck','Head','LeftShoulder','RightShoulder','LeftArm','RightArm','LeftForeArm','RightForeArm','LeftHand','RightHand','LeftUpLeg','RightUpLeg','LeftLeg','RightLeg','LeftFoot','RightFoot','LeftToeBase','RightToeBase'];
+function iposeSetup(root){const B={},rest=[];root.traverse(b=>{if(!b.isBone)return;const n=b.name.replace(/^.*[:|]/,'').replace(/^mixamorig\d*_?/,'');if(IPOSE_NAMES.includes(n)&&!B[n])B[n]=b;});
+ root.traverse(b=>{if(b.isBone)rest.push([b,b.position.clone(),b.quaternion.clone()]);});return {B,rest};}
+const _ia=new THREE.Vector3(),_ib=new THREE.Vector3(),_iq=new THREE.Quaternion(),_iq2=new THREE.Quaternion(),_io=new THREE.Quaternion(),_it=new THREE.Vector3();
+function iposeAlign(B,name,child,x,y,z){const bone=B[name],c=B[child];if(!bone||!c)return;bone.getWorldPosition(_ia);c.getWorldPosition(_ib);_ib.sub(_ia);if(_ib.lengthSq()<1e-10)return;_ib.normalize();_it.set(x,y,z).normalize().applyQuaternion(_io);
+ _iq.setFromUnitVectors(_ib,_it);bone.getWorldQuaternion(_iq2);_iq.multiply(_iq2);bone.parent.getWorldQuaternion(_iq2).invert();bone.quaternion.copy(_iq2.multiply(_iq));bone.updateWorldMatrix(false,true);}
+function iposeApply(P,wrap,o,t,w,speed=1){const B=P.B;for(const [b,p,q] of P.rest){b.position.copy(p);b.quaternion.copy(q);}
+ wrap.getWorldQuaternion(_io);o.updateWorldMatrix(true,true);
+ const f=t*Math.PI*2*(.95*speed/1.1),br=Math.sin(t*1.6)*.02;
+ for(const [side,s,off] of [['Left',1,0],['Right',-1,Math.PI]]){const ph=f+off;
+  const th=.42*Math.sin(ph)*w, kb=(.75*Math.max(0,Math.cos(ph))+.08)*w+.04*(1-w);
+  iposeAlign(B,side+'UpLeg',side+'Leg',s*.035,-Math.cos(th),Math.sin(th));
+  const sa=th-kb;iposeAlign(B,side+'Leg',side+'Foot',s*.01,-Math.cos(sa),Math.sin(sa));
+  if(B[side+'ToeBase'])iposeAlign(B,side+'Foot',side+'ToeBase',0,-.35+Math.max(0,-Math.sin(ph))*.25*w,1);
+  const as=-.32*Math.sin(ph)*w;
+  iposeAlign(B,side+'Arm',side+'ForeArm',s*.16,-1,as+.04+br);
+  const fa=as+.22+.18*w;iposeAlign(B,side+'ForeArm',side+'Hand',s*.05,-Math.cos(fa),Math.sin(fa));}
+ o.position.y=(P.oy??(P.oy=o.position.y))+Math.abs(Math.sin(f))*.025*w-.012*w;}
 function updateImports(dt){const night=settings.night&&W&&nightUnlocked(W.id);for(const it of IMPORTS.live){if(it.e.night)it.wrap.visible=night;if(!it.wrap.visible)continue;
   if(it.r){if(it.pause>0){it.pause-=dt;}else{it.next-=dt;if(it.next<0){it.pause=3+Math.random()*5;it.next=8+Math.random()*12;}}
-   const moving=it.pause>0?0:1;it.w=lerp(it.w,moving,Math.min(1,dt*4));if(it.walk){it.walk.setEffectiveWeight(it.w);it.idle.setEffectiveWeight(1-it.w);}
+   const moving=it.pause>0?0:1;it.w=lerp(it.w,moving,Math.min(1,dt*4));if(it.walk&&it.idle){it.walk.setEffectiveWeight(it.w);it.idle.setEffectiveWeight(1-it.w);}
    it.ang+=it.dir*it.speed*it.w*dt/it.r;const x=Math.cos(it.ang)*it.r,z=Math.sin(it.ang)*it.r;it.wrap.position.set(x,W?.floorAt?W.floorAt(x,z):0,z);
    it.wrap.rotation.y=Math.atan2(-Math.sin(it.ang)*it.dir,Math.cos(it.ang)*it.dir)+(it.e.yaw||0);}
-  it.mixer?.update(dt);if(it.bones)poseImport(it,dt);}}
+  it.t+=dt;it.mixer?.update(dt);if(it.P)iposeApply(it.P,it.wrap,it.o,it.t,it.w,it.speed);}}
 function renderCredits(){const el=document.getElementById('credits');if(!el)return;el.innerHTML=IMPORTS.credits.length?'<b>3D model credits</b><br/>'+IMPORTS.credits.map(e=>e.url?`<a href="${e.url}" target="_blank" rel="noopener">${e.credit.replace(/</g,'&lt;')}</a>`:e.credit.replace(/</g,'&lt;')).join('<br/>'):'';el.classList.toggle('hidden',!IMPORTS.credits.length);}
 
 function clearWorld(){IMPORTS.live=[];disposeTree(worldRoot);scene.remove(worldRoot);worldRoot=new THREE.Group();scene.add(worldRoot);scene.fog=null;scene.background=null;setEnv(null);W=null;arcadeRoot=null;targets=[];targetMeshes=[];gates=[];relicObjs=[];Sound.under(false);Sound.quiet();}
