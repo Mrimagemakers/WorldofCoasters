@@ -1,3 +1,22 @@
 {
-  "models": []
+  "models": [
+    {"file": "assets/characters/character-01.glb", "kind": "npc", "world": "hub", "height": 1.78, "wander": 12.6, "ang": 0.6, "speed": 1.15, "fixPose": true, "essential": true},
+    {"file": "assets/characters/character-03.glb", "kind": "npc", "world": "hub", "height": 1.66, "wander": 16.6, "ang": 2.2, "dir": -1, "speed": 1.05, "fixPose": true, "essential": true},
+    {"file": "assets/characters/character-09.glb", "kind": "npc", "world": "hub", "height": 1.64, "wander": 14.8, "ang": 3.9, "speed": 1.0, "fixPose": true, "essential": true},
+    {"file": "assets/characters/character-08.glb", "kind": "npc", "world": "hub", "height": 1.42, "wander": 15.6, "ang": 3.83, "speed": 1.0, "fixPose": true, "essential": true},
+    {"file": "assets/characters/character-06.glb", "kind": "npc", "world": "hub", "x": -9.0, "z": 17.6, "yaw": 4.55, "height": 1.67, "fixPose": true},
+    {"file": "assets/characters/character-00.glb", "kind": "npc", "world": "hub", "x": 8.0, "z": 18.6, "yaw": -2.73, "height": 1.8, "fixPose": true},
+    {"file": "assets/characters/character-12.glb", "kind": "npc", "world": "hub", "x": -4.6, "z": 22.6, "yaw": 2.94, "height": 1.8, "fixPose": true},
+    {"file": "assets/characters/character-07.glb", "kind": "npc", "world": "hub", "x": 11.5, "z": -15.5, "yaw": -0.64, "height": 1.85, "fixPose": true},
+    {"file": "assets/characters/character-09.glb", "kind": "npc", "world": "stations", "yaw": 0.38, "height": 1.64, "fixPose": true, "abs": true, "x": 3.4, "z": -3.2},
+    {"file": "assets/characters/character-08.glb", "kind": "npc", "world": "stations", "yaw": 0.24, "height": 1.42, "fixPose": true, "abs": true, "x": 4.1, "z": -3.6},
+    {"file": "assets/characters/character-01.glb", "kind": "npc", "world": "stations", "yaw": -0.22, "height": 1.78, "fixPose": true, "abs": true, "x": 7.2, "z": -5.5},
+    {"file": "assets/characters/character-12.glb", "kind": "npc", "world": ["wall", "rome", "taj", "space"], "yaw": -0.69, "height": 1.8, "fixPose": true, "abs": true, "x": 8.0, "z": -1.0},
+    {"file": "assets/characters/character-07.glb", "kind": "npc", "world": ["rome", "wall"], "yaw": -0.04, "height": 1.85, "fixPose": true, "abs": true, "x": 6.0, "z": -9.5},
+    {"file": "assets/characters/character-02.glb", "kind": "npc", "world": ["rome", "taj"], "yaw": 0.18, "height": 1.85, "fixPose": true, "night": true, "abs": true, "x": 3.2, "z": -11},
+    {"file": "assets/characters/character-04.glb", "kind": "npc", "world": ["maya", "petra"], "yaw": -0.18, "height": 2.0, "fixPose": true, "night": true, "abs": true, "x": 7.8, "z": -12},
+    {"file": "assets/characters/character-05.glb", "kind": "npc", "world": ["machu", "wall"], "yaw": 0.18, "height": 1.78, "fixPose": true, "night": true, "abs": true, "x": 3.2, "z": -11},
+    {"file": "assets/characters/character-10.glb", "kind": "npc", "world": ["ocean", "space"], "yaw": -0.18, "height": 2.0, "fixPose": true, "night": true, "abs": true, "x": 7.8, "z": -12},
+    {"file": "assets/characters/character-11.glb", "kind": "npc", "world": ["rio", "maya"], "yaw": 0.18, "height": 1.68, "fixPose": true, "night": true, "abs": true, "x": 3.2, "z": -11}
+  ]
 }

@@ -51,6 +51,15 @@ Portal 10, **The Ultimate World Tour**, is still marked Coming Soon.
 
 The on-screen help switches to controller glyphs when a pad is connected, and the controller rumbles on dispatch and shots.
 
+**Your Porch War characters are in the park.** All 13 rigged characters from the Porch War art pack (release `v0.2-art`) are now in `assets/characters/`. They were shrunk from 238 MB to 17 MB in total (about 1.3 MB each: 1024 px WebP textures, about 8–24k triangles, Idle and Walk clips only), so they load on Quest 3.
+- **Grand Central:** four guests stroll the plaza; one waits at the Pretzello's counter; one watches the portals; a security officer stands by the entrance; the red-hooded knight greets riders near the far portals.
+- **Stations:** guests wait on every platform, the security officer patrols the Great Wall, Rome, Taj Mahal and Galactic stations, and the knight appears in Rome and the Great Wall.
+- **Night Ride scare actors:** the phantom, demon, zombies and monster only appear on the platform when Night Ride is on (unlocked by finding all 3 relics in a world).
+- Their rigs had the arms stuck out in a T, so the game points the arms, forearms and legs in the right directions every frame and adds a walking stride and arm swing.
+- Ultra loads every character; High caps each world at 8; Performance caps it at 4.
+- Placement, height and which world each one appears in all live in `assets/sketchfab/manifest.json`.
+- These are your own files from Porch War. If any came from a marketplace or Mixamo, check its license before a commercial release.
+
 **Drop-in Sketchfab models.** `assets/sketchfab/` now takes any `.glb` (Sketchfab downloads included). List each file in `assets/sketchfab/manifest.json` with where it goes, its height and its animation, and the game places, scales and animates it. Characters can stand and idle or stroll the plaza. Credits from the manifest appear under **Comfort → 3D model credits**. See `assets/sketchfab/README.md`.
 
 ## v0.7 changes
