@@ -51,13 +51,11 @@ Portal 10, **The Ultimate World Tour**, is still marked Coming Soon.
 
 The on-screen help switches to controller glyphs when a pad is connected, and the controller rumbles on dispatch and shots.
 
-**Your Porch War characters are in the park.** All 13 rigged characters from the Porch War art pack (release `v0.2-art`) are now in `assets/characters/`. They were shrunk from 238 MB to 17 MB in total (about 1.3 MB each: 1024 px WebP textures, about 8–24k triangles, Idle and Walk clips only), so they load on Quest 3.
-- **Grand Central:** four guests stroll the plaza; one waits at the Pretzello's counter; one watches the portals; a security officer stands by the entrance; the red-hooded knight greets riders near the far portals.
-- **Stations:** guests wait on every platform, the security officer patrols the Great Wall, Rome, Taj Mahal and Galactic stations, and the knight appears in Rome and the Great Wall.
-- **Night Ride scare actors:** the phantom, demon, zombies and monster only appear on the platform when Night Ride is on (unlocked by finding all 3 relics in a world).
-- Their rigs had the arms stuck out in a T and their Porch War fight clips twisted the limbs, so the game ignores those clips. Each frame it starts from the rig's rest pose and swings the arms and legs on their natural hinges: knees bend backward during the step, elbows stay soft, arms swing opposite the legs, and the body bobs slightly. Standing characters breathe and keep relaxed arms.
-- Ultra loads every character; High caps each world at 8; Performance caps it at 4.
-- Placement, height and which world each one appears in all live in `assets/sketchfab/manifest.json`.
+**Your Porch War characters are in the park, without the monsters.** Seven friendly characters from the Porch War art pack are in `assets/characters/`: five guests (a man, three women and a boy), the hoodie guy and a security officer. The phantom, demon, zombies, monster and red-hooded knight were removed. The models were shrunk to about 1.3 MB each (1024 px WebP textures, about 8–24k triangles) so they load on Quest 3.
+- **More people from the same templates:** the five guest models are reused as new characters. Each copy gets its own outfit colors (top, undershirt, pants or shorts, shoes and hair are recolored separately, keeping fabric folds and prints), its own skin tone, height and build. 77 placements in all: 29 in Grand Central (strollers on both walkways and six pairs chatting between the portals) and 4–8 on each station platform.
+- Their Porch War fight clips twisted the limbs, so the game ignores them. Each frame it starts from the rig's rest pose and swings the arms and legs on their natural hinges: knees bend backward during the step, elbows stay soft, arms swing opposite the legs and the body bobs slightly. Characters far from you update less often to save frame time.
+- Ultra shows up to 26 per world, High 12 and Performance 5.
+- Placement, height, outfit colors and skin tone all live in `assets/sketchfab/manifest.json` (`outfit` takes `[hue, saturation, brightness]` from 0 to 1 per garment, and `skin` from 1 down to about 0.45).
 - These are your own files from Porch War. If any came from a marketplace or Mixamo, check its license before a commercial release.
 
 **Drop-in Sketchfab models.** `assets/sketchfab/` now takes any `.glb` (Sketchfab downloads included). List each file in `assets/sketchfab/manifest.json` with where it goes, its height and its animation, and the game places, scales and animates it. Characters can stand and idle or stroll the plaza. Credits from the manifest appear under **Comfort → 3D model credits**. See `assets/sketchfab/README.md`.

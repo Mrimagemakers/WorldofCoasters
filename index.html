@@ -1794,7 +1794,7 @@ function loadImportManifest(){if(IMPORTS.list)return IMPORTS.list;
   IMPORTS.credits=[...new Map(m.filter(e=>e.credit).map(e=>[e.credit,e])).values()];renderCredits();return m;}).catch(()=>[]);return IMPORTS.list;}
 function importGLB(file){if(!IMPORTS.cache.has(file))IMPORTS.cache.set(file,new GLTFLoader().loadAsync(file.includes('/')?file:'assets/sketchfab/'+file).catch(e=>{console.warn('import failed',file,e);return null;}));return IMPORTS.cache.get(file);}
 const inWorld=(e,id)=>e.world==='*'||e.world===id||(e.world==='stations'&&id!=='hub')||(Array.isArray(e.world)&&e.world.includes(id))||(!e.world&&id==='hub');
-async function spawnImports(id,root){const myRoot=root;IMPORTS.live=[];const list=await loadImportManifest();let n=0;const cap=QUALITY.tier==='performance'?4:QUALITY.tier==='high'?8:99;
+async function spawnImports(id,root){const myRoot=root;IMPORTS.live=[];const list=await loadImportManifest();let n=0;const cap=QUALITY.tier==='performance'?5:QUALITY.tier==='high'?12:26;
  for(const e of list){if(!inWorld(e,id))continue;if(n>=cap&&!e.essential&&!e.night)continue;if(!e.night)n++;const g=await importGLB(e.file);if(!g||worldRoot!==myRoot)continue;
   const o=SkeletonUtils.clone(g.scene);o.updateMatrixWorld(true);const bb=new THREE.Box3().setFromObject(o),h=Math.max(.01,bb.max.y-bb.min.y);
   const k=e.scale??(e.height&&!bb.isEmpty()&&h>.05?e.height/h:1);const wrap=new THREE.Group();o.position.y=-bb.min.y;o.position.x=-(bb.min.x+bb.max.x)/2;o.position.z=-(bb.min.z+bb.max.z)/2;wrap.add(o);wrap.scale.setScalar(k);
@@ -1803,11 +1803,31 @@ async function spawnImports(id,root){const myRoot=root;IMPORTS.live=[];const lis
   wrap.position.set(px,(e.y??(W?.floorAt?W.floorAt(px,pz):(W?.spawn?.y??0))),pz);wrap.rotation.y=py;
   o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;if(c.isSkinnedMesh)c.frustumCulled=false;if(c.material){const ms=Array.isArray(c.material)?c.material:[c.material];for(const m of ms){if(m.map&&QUALITY.tier!=='performance')m.map.anisotropy=8;if(m.roughness!==undefined)m.roughness=Math.max(.45,m.roughness);if(m.metalness!==undefined)m.metalness=Math.min(m.metalness,.2);}}}});
   myRoot.add(wrap);const item={e,wrap,o,mixer:null,walk:null,idle:null,ang:e.ang??Math.atan2(e.z||0,e.x||0),w:0,t:Math.random()*10,bones:null};
+  if(e.outfit)applyOutfit(o,e.outfit);if(e.build)wrap.scale.set(k*e.build,k,k*e.build);
   if(e.fixPose){item.P=iposeSetup(o);}
   else if(g.animations?.length){item.mixer=new THREE.AnimationMixer(o);const find=n=>n&&g.animations.find(a=>a.name.toLowerCase()===String(n).toLowerCase()||a.name.toLowerCase().includes(String(n).toLowerCase()));
    const ic=find(e.idle)||find('idle')||g.animations[0],wc=find(e.walk)||find('walk');item.idle=item.mixer.clipAction(ic);item.idle.play();
    if(wc&&wc!==ic&&e.wander){item.walk=item.mixer.clipAction(wc);item.walk.play();item.walk.setEffectiveWeight(0);}item.mixer.update(Math.random()*3);}
   item.r=e.wander||0;item.dir=e.dir||1;item.speed=e.speed||1.1;item.next=4+Math.random()*8;item.pause=e.wander?0:1e9;IMPORTS.live.push(item);}}
+/* Outfit variants for imported characters: each garment mesh (by node name) gets its own recolored copy of the
+   shared material. Target colors are [hue, saturation, value]; folds and shading in the texture are kept.
+   "skin" < 1 darkens the body texture toward deeper skin tones. */
+const GARMENT=n=>/hair/i.test(n)?'hair':/sweater|cloth|coat|hoodie|jacket|top/i.test(n)?'top':/shirt|collar/i.test(n)?'shirt':/pants|shorts|jeans|skirt|trousers/i.test(n)?'bottom':/shoe|sneaker|heel|boot/i.test(n)?'shoes':/sock/i.test(n)?'socks':/body/i.test(n)?'skin':null;
+function recolorMat(src,kind,c){const m=src.clone();m.userData.rc={uT:{value:new THREE.Vector3(...(c||[0,0,0]))},uK:{value:kind==='skin'?1:0},uS:{value:1},uSrc:{value:new THREE.Vector2(0,0)}};
+ m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,m.userData.rc);sh.fragmentShader=sh.fragmentShader.replace('#include <common>',`#include <common>
+uniform vec3 uT;uniform float uK,uS;uniform vec2 uSrc;
+vec3 rc_hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));float d=q.x-min(q.w,q.y);return vec3(abs(q.z+(q.w-q.y)/(6.*d+1e-10)),d/(q.x+1e-10),q.x);}
+vec3 rc_rgb(vec3 c){vec3 p=abs(fract(c.xxx+vec3(1.,2./3.,1./3.))*6.-3.);return c.z*mix(vec3(1.),clamp(p-1.,0.,1.),c.y);}`).replace('#include <map_fragment>',`#include <map_fragment>
+ { vec3 sr=pow(max(diffuseColor.rgb,vec3(0.)),vec3(1./2.2));
+   if(uK>.5){ float k=uS; sr*=vec3(pow(k,.92),pow(k,1.12),pow(k,1.3)); }
+   else { vec3 h=rc_hsv(sr); float v=clamp(uT.z+(h.z-.5)*.65,0.,1.); vec3 nc=rc_rgb(vec3(uT.x,mix(h.y,uT.y,.85),v)); float msk=1.; if(uSrc.y>0.){ float dh=abs(fract(h.x-uSrc.x+.5)-.5); msk=(1.-smoothstep(uSrc.y,uSrc.y+.05,dh))*smoothstep(.2,.35,h.y); } sr=mix(sr,nc,msk); }
+   diffuseColor.rgb=pow(sr,vec3(2.2)); }`);};
+ m.customProgramCacheKey=()=>'woc-recolor';return m;}
+function applyOutfit(root,o){const kinds=new Set();root.traverse(c=>{if(c.isMesh)kinds.add(GARMENT(c.name)||GARMENT(c.parent?.name||''));});
+ root.traverse(c=>{if(!c.isMesh)return;let k=GARMENT(c.name)||GARMENT(c.parent?.name||'');if(k==='shirt')k=kinds.has('top')?'shirt':'top';
+  const col=k==='skin'?null:o[k];if(k==='skin'&&!(o.skin<1))return;if(k!=='skin'&&!col)return;
+  const mats=Array.isArray(c.material)?c.material:[c.material];const nm=mats.map(mt=>{const r=recolorMat(mt,k,col);if(k==='skin')r.userData.rc.uS.value=o.skin;if(k==='top'&&o.topSrc)r.userData.rc.uSrc.value.set(o.topSrc[0],o.topSrc[1]);return r;});c.material=Array.isArray(c.material)?nm:nm[0];});}
+
 /* Procedural pose for imported rigs (Mixamo-style names, any bone frames).
    Bones are reset to their rest (T-pose) each frame, then each limb is swung to a world direction in the
    character's frame (+Z forward, +X = character's left). Knees and elbows only bend on their natural hinge. */
@@ -1834,7 +1854,7 @@ function updateImports(dt){const night=settings.night&&W&&nightUnlocked(W.id);fo
    const moving=it.pause>0?0:1;it.w=lerp(it.w,moving,Math.min(1,dt*4));if(it.walk&&it.idle){it.walk.setEffectiveWeight(it.w);it.idle.setEffectiveWeight(1-it.w);}
    it.ang+=it.dir*it.speed*it.w*dt/it.r;const x=Math.cos(it.ang)*it.r,z=Math.sin(it.ang)*it.r;it.wrap.position.set(x,W?.floorAt?W.floorAt(x,z):0,z);
    it.wrap.rotation.y=Math.atan2(-Math.sin(it.ang)*it.dir,Math.cos(it.ang)*it.dir)+(it.e.yaw||0);}
-  it.t+=dt;it.mixer?.update(dt);if(it.P)iposeApply(it.P,it.wrap,it.o,it.t,it.w,it.speed);}}
+  it.t+=dt;it.mixer?.update(dt);if(it.P){const d=Math.hypot(it.wrap.position.x-rig.position.x,it.wrap.position.z-rig.position.z);it.acc=(it.acc||0)+dt;if(d<18||it.acc>(d<35?.066:.15)){it.acc=0;iposeApply(it.P,it.wrap,it.o,it.t,it.w,it.speed);}}}}
 function renderCredits(){const el=document.getElementById('credits');if(!el)return;el.innerHTML=IMPORTS.credits.length?'<b>3D model credits</b><br/>'+IMPORTS.credits.map(e=>e.url?`<a href="${e.url}" target="_blank" rel="noopener">${e.credit.replace(/</g,'&lt;')}</a>`:e.credit.replace(/</g,'&lt;')).join('<br/>'):'';el.classList.toggle('hidden',!IMPORTS.credits.length);}
 
 function clearWorld(){IMPORTS.live=[];disposeTree(worldRoot);scene.remove(worldRoot);worldRoot=new THREE.Group();scene.add(worldRoot);scene.fog=null;scene.background=null;setEnv(null);W=null;arcadeRoot=null;targets=[];targetMeshes=[];gates=[];relicObjs=[];Sound.under(false);Sound.quiet();}
