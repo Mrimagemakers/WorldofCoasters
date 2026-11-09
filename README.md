@@ -1,4 +1,4 @@
-# World of Coasters · v0.8 "Park Characters"
+# World of Coasters · v0.9 "Funland Park"
 
 PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build step.
 
@@ -21,6 +21,34 @@ PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build ste
 | 09 | Atlantis Deep Dive (Ocean World) | Sunset pier, 100 m dive through the surface, Gate of Atlantis, glowing sunken city, hydro-jet launch |
 
 Portal 10, **The Ultimate World Tour**, is still marked Coming Soon.
+
+## v0.9 changes
+
+**Funland Park: a full amusement park.** A new 11th portal in Grand Central opens Funland Park, a walkable theme park beside its own coaster station:
+- **Rides you can get on:** walk up to a ride's entrance and press **🎡 Ride** (A / ✕ on a controller, A on Quest). The six rides are the Sky Wheel (Ferris wheel), the Grand Carousel, Freefall 52 (drop tower), the Wave Swinger, the Spinning Teacups and the Jolly Roger (pirate ship). Each lasts about a minute, or press **Leave Ride** (B / ○) to get off early.
+- **Show ride:** the Bumper Cars run on their own.
+- **Food and games:** stands sell pretzels, cotton candy, ice cream, burgers, lemonade, popcorn, churros and funnel cake, and there are four game booths (Ring Toss, Balloon Darts, Duck Pond, High Striker).
+- **The park itself:**
+  - a "FUNLAND PARK" entrance arch
+  - a fountain at the center
+  - a ring path with spokes to every ride
+  - lamp posts with bunting
+  - benches, a balloon cart and trees
+- **Guests:** they stroll the paths, wait at ride entrances and ride the carousel, wheel, swings, teacups, drop tower and pirate ship.
+
+**Coaster Builder.** On the Funland Park platform, press **🛠 Coaster Builder** (or View / Share on a controller) to design your own coaster from 16 pieces:
+- **Pieces:** straight, gentle and sharp left and right turns, climb, dive, lift hill, big drop, airtime hill, bunny hops, left and right helix, barrel roll, launch and brakes.
+- **Track sizing:** pieces automatically size themselves to the train's speed, so turns widen and drops lengthen when you're going fast and forces stay rideable. A gray automatic return run always brings the train back into the station.
+- **Live 3D preview:** drag to orbit, scroll or Q/E to zoom, and WASD to pan.
+- **Ride stats:** length, ride time, top speed, height, G-forces, airtime, inversions, and Excitement, Intensity and Nausea ratings.
+- **Warnings:** you get one if the train would run out of speed, or if a section goes over 5 G.
+- **Placement checks:** pieces are refused if they'd hit the ground, run into the park or station, leave the build area or crash into your own track. A message says why.
+- **Templates and saving:**
+  - three starter templates: Family, Thrill and Launch
+  - Undo, Clear and up to 12 saved designs
+- **Ride it:** **▶ Ride it!** makes the design the park's coaster and puts you in the front seat.
+- **Share link:** copies a URL that opens the game with your coaster loaded. In a Ride with Friends party, everyone rides the leader's design.
+- **In VR:** building works on a computer or phone. In VR you ride what you built.
 
 ## v0.8 changes
 
