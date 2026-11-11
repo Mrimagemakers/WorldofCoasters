@@ -72,6 +72,10 @@ input{font:inherit;font-size:14px;color:#fff;background:#0b1236;border:1px solid
 @media(pointer:coarse){body:not(.pad) #help{display:none}}
 #builder{position:fixed;inset:auto 0 0 0;top:auto;z-index:15;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(7,11,31,.0),rgba(7,11,31,.92) 18%);pointer-events:none;color:#e9ecff;font:13px/1.35 system-ui,sans-serif}
 #builder>*{pointer-events:auto}
+#builder{max-height:55dvh;overflow-y:auto;overscroll-behavior:contain}
+#builder button{min-height:44px}
+#builder button:disabled{opacity:.4;cursor:default}
+@media(min-width:900px){#builder{max-height:100dvh}}
 #builder .btop{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #builder .btop input{flex:1 1 160px;min-width:0;background:#0e1540;border:1px solid #33407a;color:#fff6d6;border-radius:10px;padding:8px 10px;font:700 14px system-ui}
 #builder button{background:#141c4e;border:1px solid #33407a;color:#e9ecff;border-radius:10px;padding:7px 10px;font:700 12px system-ui;cursor:pointer;touch-action:manipulation}
@@ -98,8 +102,9 @@ input{font:inherit;font-size:14px;color:#fff;background:#0b1236;border:1px solid
  <div class="btop"><b style="color:#f8d98a;font:900 16px Georgia,serif">🛠 COASTER BUILDER</b><input id="bName" maxlength="28" aria-label="Coaster name"/></div>
  <div id="bStats"></div>
  <div id="bPieces"></div>
- <div class="btop"><button data-b="undo">↶ Undo</button><button data-b="clear">Clear</button><button data-b="center">⌖ Re-center</button><button data-b="tpl:family">Family</button><button data-b="tpl:thrill">Thrill</button><button data-b="tpl:launch">Launch</button></div>
+ <div class="btop"><button data-b="undo">↶ Undo</button><button data-b="redo">↷ Redo</button><button data-b="clear">Clear</button><button data-b="center">⌖ Re-center</button><button data-b="tpl:family">Family</button><button data-b="tpl:thrill">Thrill</button><button data-b="tpl:launch">Launch</button></div>
  <div class="btop"><button data-b="save">💾 Save</button><button data-b="share">🔗 Share link</button><button data-b="ride" class="gold">▶ Ride it!</button><button data-b="close">✕ Close</button></div>
+ <div class="btop" aria-label="Builder camera"><button data-b="zoomIn" aria-label="Zoom in">＋ Zoom</button><button data-b="zoomOut" aria-label="Zoom out">− Zoom</button><button data-b="panLeft" aria-label="Pan left">←</button><button data-b="panRight" aria-label="Pan right">→</button><button data-b="panForward" aria-label="Pan forward">↑</button><button data-b="panBack" aria-label="Pan backward">↓</button></div>
  <div id="bSaved"></div>
  <div style="opacity:.7;font-size:11px">Drag to orbit · scroll or Q/E to zoom · WASD to pan. Pieces add to the end of the track; the grey part is the automatic return to the station. The park's rides are to the right, so build north and west.</div>
 </div>
@@ -1159,12 +1164,20 @@ function buildPark(root){const pc=parkCoaster(),info={};const pts=designPts(pc.s
   extras:(root,ctx)=>buildFunland(root,ctx)});
  W.coaster=pc;W.coasterInfo=info;W.buildCrowd=buildParkCrowd;return W;}
 
+function applyParkPaving(mat){
+ let disposed=false;mat.addEventListener('dispose',()=>{disposed=true;});
+ fetch('assets/openart/materials.json').then(r=>{if(!r.ok)throw Error('No material manifest');return r.json();}).then(data=>{
+  const file=data.paving?.file;if(disposed||typeof file!=='string'||!/^assets\/openart\/[a-z0-9-]+\.(webp|png|jpg)$/.test(file))return;
+  new THREE.TextureLoader().load(file,t=>{if(disposed){t.dispose();return;}t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(14,14);t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());mat.map?.dispose();mat.normalMap?.dispose();mat.map=t;mat.normalMap=null;mat.color.set(0xffffff);mat.needsUpdate=true;},undefined,()=>{});
+ }).catch(()=>{}); // Existing procedural brick remains usable offline or on failure.
+}
+
 function buildFunland(root,ctx){const R=rng(77),flats=[],anim=[];const C=(h)=>MS(h,{roughness:.45}),G=paint;
  const white=MS(0xf6f2ea,{roughness:.5}),red=C(0xe8364a),blue=C(0x2f7fe0),yel=C(0xffcf3a),pink=C(0xff7ab8),teal=C(0x2ec4b6),purple=C(0x8a5cf0),orange=C(0xff8a2a),dark=MS(0x2a2f3a,{roughness:.6}),steel=G(0xd8dde6,{metalness:.8,roughness:.25}),gold=G(0xe9b54a,{metalness:1,roughness:.22});
  const bulbM=MS(0xfff2c0,{emissive:0xffd070,emissiveIntensity:2.2});
  const CX=40,CZ=-12;
  /* paths: big ring around the fountain, an avenue from the station, spokes to each ride */
- const pathM=texMat('brick',14,14,{color:0xe8d2b8,roughness:.9});
+ const pathM=texMat('brick',14,14,{color:0xe8d2b8,roughness:.9});applyParkPaving(pathM);
  const ring=new THREE.Mesh(new THREE.RingGeometry(21,31,96).rotateX(-Math.PI/2),pathM);ring.position.set(CX,.06,CZ);ring.receiveShadow=true;root.add(ring);
  const strip=(x0,z0,x1,z1,w)=>{const L=Math.hypot(x1-x0,z1-z0),m=add(root,new THREE.PlaneGeometry(w,L).rotateX(-Math.PI/2),pathM,(x0+x1)/2,.055,(z0+z1)/2);m.rotation.y=Math.atan2(x1-x0,z1-z0);m.receiveShadow=true;};
  strip(9,-12,CX-21,CZ,10);
@@ -1322,9 +1335,9 @@ function updateFlat(dt){const fr=flatRide;if(!fr)return;fr.t+=dt;const s=fr.f.se
 /* ============================================================
    COASTER BUILDER (Funland Park) · piece palette, live 3D preview, ride stats, save / share / ride
    ============================================================ */
-const CB={seq:[],name:'',preview:null,cam:{yaw:-.9,pitch:.62,dist:150,tx:-30,ty:8,tz:-70},hist:[]};
+const CB={seq:[],name:'',preview:null,cam:{yaw:-.9,pitch:.62,dist:150,tx:-30,ty:8,tz:-70},hist:[],redo:[]};
 function openBuilder(){if(renderer.xr.isPresenting){toast('CB ON A COMPUTER OR PHONE · RIDE IT IN VR',3);return;}if(!W||W.id!=='park')return;
- const pc=W.coaster||parkCoaster();CB.seq=pc.seq.slice();CB.name=pc.name;CB.hist=[];mode='build';
+ const pc=W.coaster||parkCoaster();CB.seq=pc.seq.slice();CB.name=pc.name;CB.hist=[];CB.redo=[];mode='build';
  if(W.trackG)W.trackG.visible=false;W.cars?.forEach(c=>c.visible=false);$('#builder').classList.remove('hidden');renderBuilderUI();rebuildPreview(true);renderControls();}
 function closeBuilder(){mode='station';camera.clearViewOffset();$('#builder').classList.add('hidden');if(CB.preview){disposeTree(CB.preview);worldRoot.remove(CB.preview);CB.preview=null;}if(W.trackG)W.trackG.visible=true;W.cars?.forEach(c=>c.visible=true);toStation();renderControls();}
 function rebuildPreview(recenter){if(CB.preview){disposeTree(CB.preview);worldRoot.remove(CB.preview);}const info={};const pts=designPts(CB.seq,info);let tr;try{tr=new Track(pts,{launchV:30,launchA:11});}catch(e){console.warn(e);return;}
@@ -1339,20 +1352,24 @@ function rebuildPreview(recenter){if(CB.preview){disposeTree(CB.preview);worldRo
  const zone=[[12,62],[12,45],[1.5,45],[1.5,-46],[12,-46],[12,-100],[320,-100],[320,-560],[-420,-560],[-420,240],[-60,240],[-60,62],[12,62]].map(([x,z])=>new V3(x,.25,z));g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(zone),new THREE.LineBasicMaterial({color:0xffcf3a})));
  const e=info.end;const ar=add(g,new THREE.ConeGeometry(1.4,3.4,12).rotateX(-Math.PI/2),MS(0x6ad0ff,{emissive:0x3aa0ff,emissiveIntensity:1}),e.x,e.y+.2,e.z);ar.rotation.y=e.h;ar.position.add(new V3(-Math.sin(e.h)*3,0,-Math.cos(e.h)*3));
  if(recenter){let mn=new V3(1e9,1e9,1e9),mx=new V3(-1e9,-1e9,-1e9);for(const q of userPts){mn.min(q);mx.max(q);}const c=mn.clone().add(mx).multiplyScalar(.5);CB.cam.tx=c.x;CB.cam.ty=Math.max(4,c.y*.5);CB.cam.tz=c.z;CB.cam.dist=clamp(mx.distanceTo(mn)*.8,50,420);}
- const st=coasterStats(tr,retS);CB.stats=st;renderBuilderStats(st,info);}
+ const st=coasterStats(tr,retS);CB.stats=st;renderBuilderStats(st,info);$('#builder [data-b=undo]').disabled=!CB.hist.length&&!CB.seq.length;$('#builder [data-b=redo]').disabled=!CB.redo.length;}
 function builderAdd(k){const info={};designPts(CB.seq,info);const pts=designPts(CB.seq,{});// existing user points for collision test
  const userPts=pts.slice(0,info.userEnd);const r=layPiece(info.end,k,userPts);if(r.err){toast(r.err.toUpperCase(),2.4);Sound.tone(200,.18,'sine',.08);return;}
- CB.hist.push(CB.seq.slice());CB.seq.push(k);Sound.tone(520+CB.seq.length*8,.08,'triangle',.06);rebuildPreview(false);
+ builderCheckpoint();CB.seq.push(k);Sound.tone(520+CB.seq.length*8,.08,'triangle',.06);rebuildPreview(false);
  // keep the camera following the new end
  const e=CB.info.end;CB.cam.tx=lerp(CB.cam.tx,e.x,.5);CB.cam.tz=lerp(CB.cam.tz,e.z,.5);CB.cam.ty=lerp(CB.cam.ty,e.y*.6,.5);}
+function builderCheckpoint(){CB.hist.push(CB.seq.slice());CB.redo=[];}
 function builderAct(a){
+ if(a==='zoomIn'||a==='zoomOut'){CB.cam.dist=clamp(CB.cam.dist*(a==='zoomIn'?.85:1.15),18,420);return;}
+ if(a.startsWith('pan')){const c=CB.cam,sp=c.dist*.12,mx=a==='panLeft'?-1:a==='panRight'?1:0,mz=a==='panForward'?-1:a==='panBack'?1:0;c.tx+=(Math.cos(c.yaw)*mx+Math.sin(c.yaw)*mz)*sp;c.tz+=(-Math.sin(c.yaw)*mx+Math.cos(c.yaw)*mz)*sp;return;}
  if(PIECES[a])return builderAdd(a);
- if(a==='undo'){if(CB.hist.length){CB.seq=CB.hist.pop();rebuildPreview(false);}else if(CB.seq.length){CB.seq.pop();rebuildPreview(false);}}
- else if(a==='clear'){CB.hist.push(CB.seq.slice());CB.seq=[];rebuildPreview(true);}
- else if(a.startsWith('tpl:')){const t=COASTER_TEMPLATES[a.slice(4)];if(t){CB.hist.push(CB.seq.slice());CB.seq=t.seq.slice();CB.name=t.name;$('#bName').value=t.name;rebuildPreview(true);}}
+ if(a==='undo'){if(CB.hist.length||CB.seq.length){CB.redo.push(CB.seq.slice());if(CB.hist.length)CB.seq=CB.hist.pop();else CB.seq.pop();rebuildPreview(false);}}
+ else if(a==='redo'){if(CB.redo.length){CB.hist.push(CB.seq.slice());CB.seq=CB.redo.pop();rebuildPreview(false);}}
+ else if(a==='clear'){builderCheckpoint();CB.seq=[];rebuildPreview(true);}
+ else if(a.startsWith('tpl:')){const t=COASTER_TEMPLATES[a.slice(4)];if(t){builderCheckpoint();CB.seq=t.seq.slice();CB.name=t.name;$('#bName').value=t.name;rebuildPreview(true);}}
  else if(a==='center')rebuildPreview(true);
  else if(a==='save'){const name=($('#bName').value||'My Coaster').slice(0,28);CB.name=name;save.coasters=save.coasters||[];const code=coastCode(CB.seq);const ex=save.coasters.findIndex(c=>c.name===name);const row={name,code,at:Date.now()};if(ex>=0)save.coasters[ex]=row;else save.coasters.unshift(row);save.coasters=save.coasters.slice(0,12);persist();renderBuilderUI();toast('SAVED · '+name.toUpperCase(),2);}
- else if(a.startsWith('load:')){const c=(save.coasters||[])[+a.slice(5)];if(c){CB.hist.push(CB.seq.slice());CB.seq=coastSeq(c.code);CB.name=c.name;$('#bName').value=c.name;rebuildPreview(true);}}
+ else if(a.startsWith('load:')){const c=(save.coasters||[])[+a.slice(5)];if(c){builderCheckpoint();CB.seq=coastSeq(c.code);CB.name=c.name;$('#bName').value=c.name;rebuildPreview(true);}}
  else if(a.startsWith('del:')){(save.coasters||[]).splice(+a.slice(4),1);persist();renderBuilderUI();}
  else if(a==='share'){const name=($('#bName').value||'My Coaster').slice(0,28);const url=location.origin+location.pathname+'?coaster='+coastCode(CB.seq)+'&cn='+encodeURIComponent(name);
   const done=()=>toast('LINK COPIED · SEND IT TO A FRIEND',2.4);if(navigator.clipboard?.writeText)navigator.clipboard.writeText(url).then(done,()=>prompt('Copy this link:',url));else prompt('Copy this link:',url);}
@@ -1377,7 +1394,7 @@ function updateBuild(dt){const c=CB.cam;c.yaw+=lookX;c.pitch=clamp(c.pitch+lookY
  _m4.lookAt(rig.position,new V3(c.tx,c.ty,c.tz),THREE.Object3D.DEFAULT_UP);rig.quaternion.setFromRotationMatrix(_m4);
  const pw=innerWidth>=900?420:0;if(pw&&camera.view?.offsetX!==pw){camera.setViewOffset(innerWidth+pw,innerHeight,pw,0,innerWidth,innerHeight);}else if(!pw&&camera.view?.enabled)camera.clearViewOffset();
  const pb=innerWidth<900?Math.min(innerHeight*.55,$('#builder').offsetHeight):0;if(pb&&camera.view?.offsetY!==pb/2)camera.setViewOffset(innerWidth,innerHeight+pb,0,0,innerWidth,innerHeight);}
-addEventListener('wheel',e=>{if(mode!=='build')return;CB.cam.dist=clamp(CB.cam.dist*(e.deltaY>0?1.1:.9),18,420);},{passive:true});
+addEventListener('wheel',e=>{if(mode!=='build'||e.target!==renderer.domElement)return;CB.cam.dist=clamp(CB.cam.dist*(e.deltaY>0?1.1:.9),18,420);},{passive:true});
 function initBuilderDOM(){$('#builder').addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(b)builderAct(b.dataset.b);});
  // a design shared by link: ?coaster=CODE&cn=Name
  try{const q=new URLSearchParams(location.search),code=q.get('coaster');if(code&&coastSeq(code).length>=3){save.parkCoaster={name:(q.get('cn')||'Shared Coaster').slice(0,28),code};persist();setTimeout(()=>toast('SHARED COASTER LOADED · RIDE IT AT FUNLAND PARK',3.5),1500);}}catch(e){}}
@@ -2469,6 +2486,10 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]
  if(e.code==='KeyB')act(mode==='station'?'board':'go');if(e.code==='KeyX')act('exit');
  if(e.code==='KeyH'||e.code==='Escape'){if(!$('#directory').classList.contains('hidden')||!$('#comfort').classList.contains('hidden')){$('#directory').classList.add('hidden');$('#comfort').classList.add('hidden');}else act('hub');}});
 addEventListener('keyup',e=>{keys[e.code]=false;});
+function resetPointerInput(){drag=null;stickId=null;joy.x=joy.y=0;knob.style.transform='';duckHeld=false;lookX=lookY=0;for(const k in keys)keys[k]=false;}
+addEventListener('blur',resetPointerInput);
+addEventListener('pointercancel',resetPointerInput);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetPointerInput();});
 let drag=null;
 renderer.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,id:e.pointerId};Sound.init();});
 addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const k=e.pointerType==='touch'?.005:.0035;lookX-=(e.clientX-drag.x)*k;lookY=clamp(lookY-(e.clientY-drag.y)*k,-1.2,1.2);if(mode==='ride')lookX=clamp(lookX,-2.6,2.6);drag.x=e.clientX;drag.y=e.clientY;});

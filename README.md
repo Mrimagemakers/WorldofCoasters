@@ -1,5 +1,14 @@
 # World of Coasters · v0.9 "Funland Park"
 
+## Proposed builder and material update
+
+- Redo restores undone track edits; a new edit clears the redo history.
+- Zoom and pan buttons support phone editing and controller menu navigation. The builder panel scrolls on short screens, and scrolling the panel no longer zooms the scene.
+- Interrupted touches, switching apps, or losing focus clear held movement and duck input.
+- Funland paths can load a reviewed local OpenArt color texture through `assets/openart/materials.json`. Generation and visual review are pending; procedural paving remains active until then. See `assets/openart/README.md`.
+
+Checks: `node tests/builder.test.cjs` and `node tests/materials.test.cjs`. These exercise history/camera logic and asynchronous material loading; physical phone, gamepad and Quest checks remain necessary before release. Existing WebXR riding behavior is retained; the builder still runs outside VR.
+
 PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build step.
 
 ## What's in this build
