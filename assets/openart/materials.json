@@ -1,10 +1,13 @@
 {
   "paving": {
     "file": null,
-    "status": "awaiting-generation-and-visual-review",
+    "status": "generated-awaiting-visual-review",
     "provider": "OpenArt",
     "model": "nano-banana-2-1",
     "resolution": "1K",
-    "prompt": "Seamless tileable photorealistic warm sandstone rectangular paving stones for a premium amusement park pedestrian plaza. Orthographic top-down surface scan, edge-to-edge repeating running bond pattern, fine mineral grain and subtle wear, narrow recessed sand-colored joints, restrained beige and cream color variation. Flat diffuse neutral lighting, no directional light, no cast shadows, no perspective, no objects, no borders, no text, no logos. Albedo color texture only, all four edges must tile continuously."
+    "prompt": "Seamless tileable photorealistic warm sandstone rectangular paving stones for a premium amusement park pedestrian plaza. Orthographic top-down surface scan, edge-to-edge repeating running bond pattern, fine mineral grain and subtle wear, narrow recessed sand-colored joints, restrained beige and cream color variation. Flat diffuse neutral lighting, no directional light, no cast shadows, no perspective, no objects, no borders, no text, no logos. Albedo color texture only, all four edges must tile continuously.",
+    "historyId": "0jEAhkVXDmCJwIzqj2PO",
+    "projectId": "3Tdl2UWhkoQXn7pjHMqa",
+    "resourceId": "W2LFomLus3Yvywnibnhf"
   }
 }
