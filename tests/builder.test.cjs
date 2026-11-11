@@ -1,0 +1,22 @@
+const {readFileSync}=require('node:fs');
+const {runInNewContext}=require('node:vm');
+const assert=require('node:assert/strict');
+const html=readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
+const source=html.slice(html.indexOf('function builderCheckpoint()'),html.indexOf('function renderBuilderUI()'));
+const CB={seq:['straight','lift','drop'],hist:[],redo:[],cam:{dist:100,yaw:0,tx:0,tz:0}};
+const ctx={CB,PIECES:{},clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),rebuildPreview(){},
+ COASTER_TEMPLATES:{},$:()=>({value:'Test'}),save:{coasters:[]}};
+runInNewContext(source,ctx);
+const seq=()=>Array.from(CB.seq);
+ctx.builderAct('undo');assert.deepEqual(seq(),['straight','lift']);
+ctx.builderAct('redo');assert.deepEqual(seq(),['straight','lift','drop']);
+ctx.builderAct('clear');assert.deepEqual(seq(),[]);
+ctx.builderAct('undo');assert.equal(CB.seq.length,3);
+ctx.builderAct('redo');assert.equal(CB.seq.length,0);
+ctx.builderAct('undo');ctx.builderCheckpoint();CB.seq.push('brake');
+ctx.builderAct('redo');assert.deepEqual(seq(),['straight','lift','drop','brake']);
+ctx.builderAct('panRight');assert.equal(CB.cam.tx,12);
+ctx.builderAct('panForward');assert.equal(CB.cam.tz,-12);
+for(let i=0;i<100;i++)ctx.builderAct('zoomIn');assert.equal(CB.cam.dist,18);
+for(let i=0;i<100;i++)ctx.builderAct('zoomOut');assert.equal(CB.cam.dist,420);
+console.log('Builder history, branching edits, camera pan and zoom limits passed.');
