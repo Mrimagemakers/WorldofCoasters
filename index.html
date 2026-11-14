@@ -84,6 +84,12 @@ input{font:inherit;font-size:14px;color:#fff;background:#0b1236;border:1px solid
 #bStats b{color:#f8d98a}.bstars b{color:#ffcf3a;letter-spacing:1px}.bwarn{color:#ffb4a0}
 #bSaved{display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-height:12vh;overflow:auto}#bSaved .brow{display:flex;gap:2px}#bSaved i{opacity:.6}
 @media (min-width:900px){#builder{left:auto;top:0;width:420px;background:rgba(7,11,31,.9);border-left:1px solid #33407a;align-content:start;overflow:auto}#bPieces{max-height:none}}
+#cardStart{margin-top:10px;background:rgba(10,16,44,.75);border:1px solid #e9b54a;color:#f8d98a;border-radius:999px;padding:12px 22px;font:800 14px system-ui;letter-spacing:.06em;cursor:pointer}
+.cardnote{margin-top:6px;font:12px/1.4 system-ui;color:#c8d0f0;max-width:420px}
+@media (max-height:520px){.cardnote{display:none}}
+body.cardboard #hud,body.cardboard #controls,body.cardboard #help,body.cardboard #toast,body.cardboard #bigmsg,body.cardboard #stick,body.cardboard #cross,body.cardboard .overlay,body.cardboard #builder,body.cardboard #VRButton{display:none!important}
+body.cardboard::after{content:'';position:fixed;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:#000;z-index:50;pointer-events:none}
+@media (orientation:portrait){body.cardboard::before{content:'↻  Turn your phone sideways and place it in your viewer';position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;background:#070b1f;color:#f8d98a;font:800 20px system-ui}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
 </head>
@@ -135,7 +141,7 @@ input{font:inherit;font-size:14px;color:#fff;background:#0b1236;border:1px solid
  <h1>WORLD OF<br/>COASTERS</h1>
  <div class="tag">10 WORLDS · ENDLESS THRILLS · YOUR RIDE</div>
  <p id="inviteNote" style="display:none;color:#f8d98a;font-weight:800"></p><p>Step into <b>Grand Central</b>, a twilight park with ten portals. Three are open now: race the <b>Great Wall</b>, launch into <b>outer space</b>, and dive to <b>Atlantis</b>. Walk each station, pick your seat, and hunt hidden relics as you ride.</p>
- <button id="start" class="gold">ENTER GRAND CENTRAL →</button>
+ <button id="start" class="gold">ENTER GRAND CENTRAL →</button><button id="cardStart" type="button">📱 PLAY IN CARDBOARD VR</button><div id="cardNote" class="cardnote">Phone in a Google Cardboard or any 360° viewer: look around to aim, tap to select, hold to walk, look down for the menu.</div>
  <div class="note">Desktop, mobile and Meta Quest Browser. For VR, open over HTTPS on Quest 3 and press ENTER VR.</div>
 </div></div>
 
@@ -164,7 +170,7 @@ const SERIF='Cinzel, "Trajan Pro", Georgia, serif',SANS='Inter, system-ui, Arial
 /* ---------- save data ---------- */
 const SAVE_KEY='woc.save.v2';
 const save=(()=>{let d={relics:{},best:{},settings:{}};try{const r=localStorage.getItem(SAVE_KEY);if(r)d=Object.assign(d,JSON.parse(r));}catch(e){}return d;})();
-const settings=Object.assign({intensity:'standard',horizon:false,vignette:'low',snap:30,night:false,sound:true,quality:'ultra',heroes:false},save.settings||{});
+const settings=Object.assign({intensity:'standard',horizon:false,vignette:'low',snap:30,night:false,sound:true,quality:'ultra',heroes:false,cardLens:true},save.settings||{});
 const IS_QUEST=/OculusBrowser|Quest/i.test(navigator.userAgent),IS_MOBILE=!IS_QUEST&&/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 if(!(save.settings&&save.settings.quality))settings.quality=(IS_QUEST||IS_MOBILE)?'high':'ultra';
 function persist(){save.settings=settings;try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
@@ -2065,7 +2071,7 @@ const isTouch=matchMedia('(pointer:coarse)').matches;
 
 function renderControls(){
  const B=(id,label,cls='')=>`<button data-act="${id}" class="${cls}">${label}</button>`;let h='';
- if(mode==='hub')h=B('dir','☰ Portal Directory','gold')+B('party',Party.on?'👥 Party '+Party.code:'👥 Ride with Friends',Party.on?'on':'')+B('comfort','⚙ Comfort')+B('sound',settings.sound?'♫ Sound On':'♫ Sound Off');
+ if(mode==='hub')h=B('dir','☰ Portal Directory','gold')+(IS_MOBILE||'ontouchstart' in window?B('cardboard','📱 Cardboard VR'):'')+B('autotour',CARD.auto?'🎬 Tour: On':'🎬 Ride Tour',CARD.auto?'on':'')+B('party',Party.on?'👥 Party '+Party.code:'👥 Ride with Friends',Party.on?'on':'')+B('comfort','⚙ Comfort')+B('sound',settings.sound?'♫ Sound On':'♫ Sound Off');
  else if(mode==='flat')h=B('flatexit','⇠ Leave Ride','gold')+B('comfort','⚙ Comfort')+B('sound',settings.sound?'♫':'♫̸');
  else if(mode==='build')h='';
  else if(mode==='station')h=(W?.nearFlat?B('flat','🎡 Ride '+W.nearFlat.name,'gold'):'')+(W?.id==='park'?B('build','🛠 Coaster Builder',W.nearFlat?'':'gold'):'')+B('board','▶ Board the Train',W?.nearFlat||W?.id==='park'?'':'gold')+B('arcade',arcade?'◎ Arcade Mode':'◌ Scenic Mode',arcade?'on':'')+B('seat','Seat: '+SEATS[seat].n)+(nightUnlocked(W.id)?B('night',settings.night?'☾ Night Ride On':'☾ Night Ride',settings.night?'on':''):'')+B('hub','⌂ Grand Central')+B('party',Party.on?'👥 '+Party.members.size:'👥 Friends',Party.on?'on':'')+B('comfort','⚙')+B('sound',settings.sound?'♫':'♫̸');
@@ -2103,6 +2109,8 @@ function act(a){
  else if(a==='night'){if(W&&nightUnlocked(W.id)){settings.night=!settings.night;persist();W.setNight?.(settings.night);W.sky.u.bAmt.value=settings.night?.28:1;setEnv(W.sky);renderControls();}}
  else if(a==='hub'){if(mode!=='hub'){if(mode==='build')$('#builder').classList.add('hidden');flatRide=null;transition(enterHub);}}
  else if(a==='build')openBuilder();
+ else if(a==='cardboard')cardEnter();
+ else if(a==='autotour'){CARD.auto=!CARD.auto;CARD.tourT=0;toast(CARD.auto?'🎬 RIDE TOUR ON · SIT BACK AND ENJOY':'RIDE TOUR OFF',2.4);renderControls();}
  else if(a==='flat')rideFlat(nearestFlat());
  else if(a==='flatexit')leaveFlat();
  else if(a==='fire')fireFromCamera();
@@ -2124,6 +2132,7 @@ function openComfort(){
   `<div class="row"><div class="lbl">Comfort vignette<small>Narrows your view at speed and while walking.</small></div>${seg('vignette',[['off','Off'],['low','Low'],['high','High']])}</div>`+
   `<div class="row"><div class="lbl">Snap turn (VR)<small>Right thumbstick turn step.</small></div>${seg('snap',[[30,'30°'],[45,'45°']])}</div>`+
   `<div class="row"><div class="lbl">Graphics quality<small>Ultra adds soft shadows, glow and denser scenery. Pick High or Performance if your Quest 3 stutters.</small></div>${seg('quality',[['ultra','Ultra'],['high','High'],['performance','Performance']])}</div>`+
+  `<div class="row"><div class="lbl">Cardboard lens correction<small>Pre-warps the picture for the lenses in Google Cardboard-style viewers. Turn off for viewers without lenses.</small></div>${seg('cardLens',[[true,'On'],[false,'Off']])}</div>`+
   `<div class="row"><div class="lbl">Realistic close-up guests (beta)<small>Swaps the nearest guests for a scanned 3D model. Heavier on Quest and doesn't match the cartoon style. Applies on the next world.</small></div>${seg('heroes',[[false,'Off'],[true,'On']])}</div>`+
   `<div class="row" style="border:0"><div class="lbl">Instant exit<small>Quest: press B at any time to return to Grand Central. Desktop: H or Esc.</small></div></div>`;
  $('#comfortRows').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;let v=b.dataset.v;if(v==='true')v=true;else if(v==='false')v=false;else if(!isNaN(+v))v=+v;settings[b.dataset.k]=v;persist();if(b.dataset.k==='heroes'&&v)loadHeroes();if(b.dataset.k==='quality'){applyQuality();toast('GRAPHICS: '+String(v).toUpperCase()+' · SCENERY DENSITY UPDATES ON NEXT WORLD');}openComfort();};
@@ -2234,7 +2243,7 @@ function dispatch(){if(mode!=='ride')return;bigT=0;$('#bigmsg').style.opacity=0;
 function dock(){ride.state='docked';ride.v=0;ride.s=W.st.s;ride.dist=0;ride.dwell=0;ride.laps++;ride.auto=arcade?1e9:9;Sound.quiet();
  if(arcade){const best=save.best[W.id]||0;if(score>best){save.best[W.id]=score;persist();}
   $('#resWorld').textContent=W.def.name;$('#resBody').innerHTML=`<div style="font-family:Cinzel,serif;font-size:40px;color:#f8d98a;font-weight:900">${score.toLocaleString()}</div>Targets hit <b>${hits}/${targetTotal}</b> · Gates ducked <b>${ducks}/${gates.length}</b><br/>Relics <b>${relicCount(W.id)}/3</b> · Best <b>${(save.best[W.id]||0).toLocaleString()}</b>${score>best&&score>0?'<br/><span style="color:#8fd8ff;font-weight:800">NEW PERSONAL BEST!</span>':''}`;
-  if(!renderer.xr.isPresenting)$('#results').classList.remove('hidden');vrToast=`RUN COMPLETE · ${score.toLocaleString()} PTS`;vrToastT=6;}
+  if(!renderer.xr.isPresenting&&!CARD.on&&!CARD.auto)$('#results').classList.remove('hidden');vrToast=`RUN COMPLETE · ${score.toLocaleString()} PTS`;vrToastT=6;}
  else toast('WELCOME BACK · NEXT DISPATCH IN 9');renderControls();}
 function resetRun(){score=0;combo=0;hits=0;ducks=0;targets.forEach(t=>{t.hit=false;t.pop=0;});gates.forEach(g=>g.done=false);}
 
@@ -2383,7 +2392,7 @@ function updateRide(dt){
 /* ---------- walking (hub + station explorer) ---------- */
 const joy={x:0,y:0};let snapArmed=true,xrMove={x:0,y:0};
 function updateWalk(dt){
- let mx=joy.x+xrMove.x+Pad.move.x,my=joy.y+xrMove.y+Pad.move.y;if(keys.KeyW||keys.ArrowUp)my-=1;if(keys.KeyS||keys.ArrowDown)my+=1;if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;
+ let mx=joy.x+xrMove.x+Pad.move.x,my=joy.y+xrMove.y+Pad.move.y;if(keys.KeyW||keys.ArrowUp)my-=1;if(keys.KeyS||keys.ArrowDown)my+=1;if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;if(CARD.walk)my-=1;
  const l=Math.hypot(mx,my);if(l>1){mx/=l;my/=l;}
  if(l>.05){camera.getWorldDirection(camDir);camDir.y=0;camDir.normalize();const rx=-camDir.z,rz=camDir.x;const sp=3.4*(keys.ShiftLeft||keys.ShiftRight||Pad.sprint?1.8:1);rig.position.x+=(camDir.x*-my+rx*mx)*sp*dt;rig.position.z+=(camDir.z*-my+rz*mx)*sp*dt;}
  W.clampWalk(rig.position);rig.position.y=W.floorAt(rig.position.x,rig.position.z)+1.6;
@@ -2472,7 +2481,7 @@ addEventListener('keyup',e=>{keys[e.code]=false;});
 let drag=null;
 renderer.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,id:e.pointerId};Sound.init();});
 addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const k=e.pointerType==='touch'?.005:.0035;lookX-=(e.clientX-drag.x)*k;lookY=clamp(lookY-(e.clientY-drag.y)*k,-1.2,1.2);if(mode==='ride')lookX=clamp(lookX,-2.6,2.6);drag.x=e.clientX;drag.y=e.clientY;});
-addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.id)return;const moved=Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy);drag=null;if(moved>7||e.target!==renderer.domElement)return;
+addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.id)return;const moved=Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy);drag=null;if(moved>7||e.target!==renderer.domElement||CARD.on)return;
  const ndc=new THREE.Vector2(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);
  if(mode==='ride'&&arcade)fireFromCamera(ndc);
  else if(mode==='hub'){raycaster.setFromCamera(ndc,camera);const hit=raycaster.intersectObjects(W.discs,false)[0];if(hit)enterPortal(hit.object.userData.world);}});
@@ -2481,12 +2490,126 @@ stick.addEventListener('pointerdown',e=>{stickId=e.pointerId;stick.setPointerCap
 stick.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e);});
 stick.addEventListener('pointerup',()=>{stickId=null;joy.x=joy.y=0;knob.style.transform='';});
 function moveStick(e){const r=stick.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),l=Math.min(1,Math.hypot(dx,dy)/50),a=Math.atan2(dy,dx);joy.x=Math.cos(a)*l;joy.y=Math.sin(a)*l;knob.style.transform=`translate(${joy.x*40}px,${joy.y*40}px)`;}
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
+function onResize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);}
+addEventListener('resize',onResize);
+
+/* ============================================================
+   CARDBOARD VR · phone-in-a-viewer mode for Google Cardboard and other basic 360° headsets
+   Side-by-side stereo with lens correction, gyroscope head tracking, a gaze reticle (look + tap or
+   look + hold still to select), tap-and-hold to walk, a look-down menu, and an auto Ride Tour
+   for sit-back watching. Works on iPhone and Android, no WebXR needed.
+   ============================================================ */
+const CARD={on:false,dev:null,haveSensor:false,yaw0:0,lens:true,auto:false,dwell:0,hot:null,touchT:0,touchDown:false,walk:false,menuOpen:false,menuT:0,tourT:0,
+ q:new THREE.Quaternion(),stereo:new THREE.StereoCamera(),rt:null,quad:null,qScene:null,qCam:new THREE.OrthographicCamera(-1,1,1,-1,0,1)};
+CARD.stereo.eyeSep=.064;
+addEventListener('deviceorientation',e=>{if(e.alpha===null&&e.beta===null)return;CARD.dev=e;CARD.haveSensor=true;},true);
+const _cz=new V3(0,0,1),_ce=new THREE.Euler(),_cq0=new THREE.Quaternion(),_cq1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5)),_cqy=new THREE.Quaternion();
+function cardDeviceQuat(out){const e=CARD.dev,D=THREE.MathUtils.DEG2RAD,orient=(screen.orientation?.angle??window.orientation??0)*D;
+ _ce.set((e.beta||0)*D,(e.alpha||0)*D,-(e.gamma||0)*D,'YXZ');out.setFromEuler(_ce);out.multiply(_cq1);out.multiply(_cq0.setFromAxisAngle(_cz,-orient));return out;}
+function cardYaw(q){return new THREE.Euler().setFromQuaternion(q,'YXZ').y;}
+function cardRecenter(){if(CARD.haveSensor){cardDeviceQuat(CARD.q);CARD.yaw0=cardYaw(CARD.q);}else{lookX=0;lookY=0;}toast('VIEW RE-CENTERED',1.2);}
+/* barrel-distortion pass so the image looks straight through the viewer's lenses */
+function cardSetupPass(){if(CARD.quad)return;CARD.rt=new THREE.WebGLRenderTarget(16,16,{samples:QUALITY.tier==='performance'?0:2});CARD.rt.texture.colorSpace=THREE.SRGBColorSpace;
+ CARD.qScene=new THREE.Scene();CARD.quad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{tex:{value:CARD.rt.texture},k1:{value:.34},k2:{value:.55},on:{value:1},asp:{value:1}},depthTest:false,depthWrite:false,
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+  fragmentShader:`uniform sampler2D tex;uniform float k1,k2,on,asp;varying vec2 vUv;
+   void main(){float eye=step(.5,vUv.x);vec2 c=vec2(eye*.5+.25,.5);vec2 d=(vUv-c)*vec2(2.,1.);d.x*=asp;float r2=dot(d,d);float f=on>.5?(1.+k1*r2+k2*r2*r2)/(1.+k1*.25+k2*.0625):1.;vec2 dd=d*f;dd.x/=asp;vec2 uv=c+dd*vec2(.5,1.);
+    if(uv.x<eye*.5||uv.x>eye*.5+.5||uv.y<0.||uv.y>1.){gl_FragColor=vec4(0.,0.,0.,1.);return;}
+    gl_FragColor=texture2D(tex,uv);float edge=smoothstep(.0,.02,min(min(uv.x-eye*.5,eye*.5+.5-uv.x),min(uv.y,1.-uv.y)));gl_FragColor.rgb*=edge;}`}));CARD.quad.frustumCulled=false;CARD.qScene.add(CARD.quad);}
+function cardRender(){const w=renderer.domElement.width,h=renderer.domElement.height,cs=renderer.getSize(new THREE.Vector2()),rt=CARD.rt;if(rt.width!==w||rt.height!==h)rt.setSize(w,h);
+ camera.updateMatrixWorld();CARD.stereo.aspect=.5;CARD.stereo.update(camera);const cams=[CARD.stereo.cameraL,CARD.stereo.cameraR];
+ for(let i=0;i<2;i++){if(CARD.lens){const hw=w>>1;rt.viewport.set(i*hw,0,hw,h);rt.scissor.set(i*hw,0,hw,h);rt.scissorTest=true;renderer.setRenderTarget(rt);}
+  else{renderer.setRenderTarget(null);renderer.setScissorTest(true);renderer.setScissor(i*cs.x/2,0,cs.x/2,cs.y);renderer.setViewport(i*cs.x/2,0,cs.x/2,cs.y);}
+  renderer.render(scene,cams[i]);}
+ rt.scissorTest=false;rt.viewport.set(0,0,w,h);rt.scissor.set(0,0,w,h);renderer.setScissorTest(false);renderer.setViewport(0,0,cs.x,cs.y);
+ if(CARD.lens){renderer.setRenderTarget(null);CARD.quad.material.uniforms.asp.value=(cs.x/2)/cs.y;renderer.render(CARD.qScene,CARD.qCam);}}
+/* gaze reticle (one in front of each eye, since it's attached to the camera) */
+const cardRet=new THREE.Group();cardRet.position.z=-1.6;cardRet.visible=false;camera.add(cardRet);
+{const m=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.9,depthTest:false});const dot=new THREE.Mesh(new THREE.RingGeometry(.006,.014,24),m);dot.renderOrder=9998;cardRet.add(dot);
+ const ring=new THREE.Mesh(new THREE.RingGeometry(.022,.03,40,1,Math.PI/2,0.001),new THREE.MeshBasicMaterial({color:0xe9b54a,transparent:true,depthTest:false}));ring.renderOrder=9998;cardRet.add(ring);cardRet.userData={dot,ring};}
+function cardRing(p){const r=cardRet.userData.ring;r.geometry.dispose();r.geometry=new THREE.RingGeometry(.022,.03,40,1,Math.PI/2,-Math.max(.001,p)*TAU);cardRet.userData.dot.scale.setScalar(CARD.hot?1.6:1);}
+/* look-down menu */
+const cardMenu=new THREE.Group();cardMenu.visible=false;scene.add(cardMenu);
+function cardBtnTex(label,sub,hot){return canvasTex(512,200,(x,w,h)=>{rr(x,6,6,w-12,h-12,40);x.fillStyle=hot?'rgba(233,181,74,.96)':'rgba(10,16,44,.92)';x.fill();x.lineWidth=6;x.strokeStyle='#e9b54a';x.stroke();x.textAlign='center';x.textBaseline='middle';x.fillStyle=hot?'#1b1446':'#fff6d6';x.font=`900 ${label.length>16?50:60}px ${SANS}`;x.fillText(label,w/2,sub?h*.4:h/2);if(sub){x.font=`700 30px ${SANS}`;x.fillStyle=hot?'#3a2a10':'#9fb0e0';x.fillText(sub,w/2,h*.74);}});}
+function cardMenuItems(){const it=[];const tour=['autotour','🎬 Ride Tour: '+(CARD.auto?'ON':'OFF'),'Sit back and ride every world'];
+ if(mode==='hub')it.push(['go:park','🎡 Funland Park','Rides + your coaster'],['go:next','🌍 Next World','Jump to a coaster'],tour);
+ else if(mode==='station'){if(W?.nearFlat)it.push(['flat','🎡 Ride '+W.nearFlat.name,'']);it.push(['board','▶ Board the Train',''],['arcade',arcade?'🎯 Arcade: ON':'🌅 Scenic Mode','Tap here to switch'],tour,['hub','⌂ Grand Central','']);}
+ else if(mode==='ride'){if(ride.state==='docked')it.push(['go','▶ Dispatch',''],['exit','⇠ Exit Train','']);else it.push(['pause',ride.state==='paused'?'▶ Resume':'⏸ Pause','']);it.push(['seat','💺 Seat: '+SEATS[seat].n,'']);it.push(tour,['hub','⌂ Grand Central','']);}
+ else if(mode==='flat')it.push(['flatexit','⇠ Leave Ride','']);
+ it.push(['recenter','⌖ Re-center View',''],['cardexit','✕ Exit Cardboard','Back to the phone screen']);return it;}
+function cardBuildMenu(){for(const c of [...cardMenu.children]){c.material.map?.dispose();c.material.dispose();c.geometry.dispose();cardMenu.remove(c);}
+ const items=cardMenuItems(),n=items.length,cols=n>4?3:2,rows=Math.ceil(n/cols);
+ items.forEach(([act,label,sub],i)=>{const cx=(i%cols-(cols-1)/2)*.62,cy=-(Math.floor(i/cols)-(rows-1)/2)*.27;const m=new THREE.Mesh(new THREE.PlaneGeometry(.58,.226),new THREE.MeshBasicMaterial({map:cardBtnTex(label,sub,false),transparent:true,depthTest:false}));
+  m.position.set(cx,cy,0);m.renderOrder=9997;m.userData={act,label,sub};cardMenu.add(m);});}
+function cardOpenMenu(){camera.getWorldPosition(camPos);camera.getWorldDirection(camDir);camDir.y=0;camDir.normalize();const yaw=Math.atan2(-camDir.x,-camDir.z);
+ cardMenu.position.copy(camPos).addScaledVector(camDir,1.55);cardMenu.position.y-=.95;cardMenu.rotation.set(-.62,yaw,0,'YXZ');cardBuildMenu();cardMenu.visible=true;CARD.menuOpen=true;CARD.menuT=0;}
+function cardCloseMenu(){cardMenu.visible=false;CARD.menuOpen=false;}
+function cardDo(a){Sound.tone(740,.06,'triangle',.06);
+ if(a==='recenter')cardRecenter();else if(a==='cardexit')cardExit();
+ else if(a==='autotour'){CARD.auto=!CARD.auto;CARD.tourT=0;toast(CARD.auto?'RIDE TOUR ON · SIT BACK AND ENJOY':'RIDE TOUR OFF',2);}
+ else if(a==='go:park'){transition(()=>enterWorld('park'));}
+ else if(a==='go:next'){cardNextWorld();}
+ else act(a);
+ cardCloseMenu();}
+function cardNextWorld(){const ready=WORLDS.filter(w=>w.ready&&w.build);const i=ready.findIndex(w=>w.id===W?.id);const nx=ready[(i+1)%ready.length];transition(()=>enterWorld(nx.id));}
+/* what the reticle is pointing at: a menu button, a portal (hub) or a ride entrance */
+function cardPick(){raycaster.setFromCamera({x:0,y:0},camera);
+ if(CARD.menuOpen){const h=raycaster.intersectObjects(cardMenu.children,false)[0];return h?{kind:'menu',obj:h.object,dwell:1.1}:null;}
+ if(mode==='hub'&&W?.discs){const h=raycaster.intersectObjects(W.discs,false)[0];if(h&&h.distance<32)return {kind:'portal',obj:h.object,dwell:2.6};}
+ return null;}
+function cardSelect(){if(CARD.hot){const h=CARD.hot;if(h.kind==='menu')cardDo(h.obj.userData.act);else if(h.kind==='portal')enterPortal(h.obj.userData.world);CARD.dwell=0;return;}
+ if(mode==='ride'&&arcade){act('fire');return;}
+ if(mode==='ride'&&ride.state==='docked'){act('go');return;}
+ if(mode==='station'&&W?.nearFlat){act('flat');return;}
+ if(!CARD.menuOpen)cardOpenMenu();else cardCloseMenu();}
+function cardUpdate(dt){if(!CARD.on)return;
+ // head pose
+ if(CARD.haveSensor){cardDeviceQuat(CARD.q);_cqy.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,-CARD.yaw0);camera.quaternion.copy(_cqy).multiply(CARD.q);}else camera.rotation.set(lookY,lookX,0,'YXZ');
+ // look down past ~40° to open the menu, look back up to close it
+ camera.getWorldDirection(camDir);const pitch=Math.asin(clamp(camDir.y,-1,1));
+ if(!CARD.menuOpen&&pitch<-.72&&mode!=='build'){CARD.menuT+=dt;if(CARD.menuT>.6)cardOpenMenu();}else if(!CARD.menuOpen)CARD.menuT=0;
+ if(CARD.menuOpen&&pitch>-.12){CARD.menuT+=dt;if(CARD.menuT>.5)cardCloseMenu();}else if(CARD.menuOpen)CARD.menuT=0;
+ hudMesh.visible=!CARD.menuOpen;
+ // gaze dwell
+ const p=cardPick();const same=p&&CARD.hot&&p.obj===CARD.hot.obj;if(!same){if(CARD.hot?.kind==='menu'){const u=CARD.hot.obj.userData;CARD.hot.obj.material.map.dispose();CARD.hot.obj.material.map=cardBtnTex(u.label,u.sub,false);}CARD.hot=p;CARD.dwell=0;
+  if(p?.kind==='menu'){const u=p.obj.userData;p.obj.material.map.dispose();p.obj.material.map=cardBtnTex(u.label,u.sub,true);}}
+ if(CARD.hot){CARD.dwell+=dt;if(CARD.dwell>=CARD.hot.dwell){cardSelect();CARD.dwell=-1.2;}}
+ cardRing(CARD.hot?clamp(CARD.dwell/CARD.hot.dwell,0,1):0);
+ // tap-and-hold walks where you look
+ if(CARD.touchDown&&performance.now()-CARD.touchT>350&&(mode==='hub'||mode==='station'))CARD.walk=true;
+}
+/* Ride Tour (watch mode, with or without a headset): board, ride, then hop to the next world */
+function tourUpdate(dt){if(!CARD.auto||fadeTarget===1)return;CARD.tourT+=dt;
+ if(mode==='hub'&&CARD.tourT>5){CARD.tourT=0;cardNextWorld();}
+ else if(mode==='station'&&CARD.tourT>4){CARD.tourT=0;act('board');}
+ else if(mode==='ride'&&ride.state==='docked'&&ride.laps>0&&CARD.tourT>6){CARD.tourT=0;cardNextWorld();}
+ else if(mode==='ride'&&ride.state!=='docked')CARD.tourT=0;
+ else if(mode==='flat'||mode==='build')CARD.tourT=0;}
+async function cardEnter(){
+ // iPhone needs explicit permission for the motion sensors (must run inside the tap)
+ try{if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')toast('MOTION ACCESS DENIED · DRAG TO LOOK',3);}}catch(e){}
+ try{await document.documentElement.requestFullscreen?.({navigationUI:'hide'});}catch(e){}
+ try{await screen.orientation?.lock?.('landscape');}catch(e){}
+ try{CARD.wake=await navigator.wakeLock?.request('screen');}catch(e){}
+ cardSetupPass();CARD.lens=settings.cardLens!==false;CARD.on=true;document.body.classList.add('cardboard');hudMesh.visible=true;cardRet.visible=true;camera.rotation.set(0,0,0);
+ if(mode==='cover')start();Sound.init();try{history.pushState({card:1},'');}catch(e){}
+ setTimeout(()=>{cardRecenter();},700);vrToast='LOOK + TAP TO SELECT · HOLD TO WALK · LOOK DOWN FOR MENU';vrToastT=8;renderControls();}
+function cardExit(){if(!CARD.on)return;CARD.on=false;CARD.walk=false;cardCloseMenu();document.body.classList.remove('cardboard');hudMesh.visible=renderer.xr.isPresenting;cardRet.visible=false;
+ try{screen.orientation?.unlock?.();}catch(e){}if(document.fullscreenElement)document.exitFullscreen?.().catch(()=>{});try{CARD.wake?.release();}catch(e){}
+ camera.quaternion.identity();lookX=0;lookY=0;onResize();renderControls();}
+addEventListener('popstate',()=>{if(CARD.on)cardExit();});
+document.addEventListener('fullscreenchange',()=>{if(CARD.on&&!document.fullscreenElement&&document.fullscreenEnabled&&IS_MOBILE)cardExit();});
+/* the Cardboard button (or a screen tap) selects; holding walks. Bluetooth clickers send Enter / Space / media keys. */
+renderer.domElement.addEventListener('touchstart',e=>{if(!CARD.on)return;e.preventDefault();if(e.touches.length>=2){cardOpenMenu();return;}CARD.touchDown=true;CARD.touchT=performance.now();},{passive:false});
+renderer.domElement.addEventListener('touchend',e=>{if(!CARD.on)return;e.preventDefault();const held=performance.now()-CARD.touchT;CARD.touchDown=false;if(!CARD.walk&&held<350)cardSelect();CARD.walk=false;},{passive:false});
+renderer.domElement.addEventListener('mousedown',e=>{if(!CARD.on||IS_MOBILE)return;CARD.touchDown=true;CARD.touchT=performance.now();});
+renderer.domElement.addEventListener('mouseup',e=>{if(!CARD.on||IS_MOBILE)return;const held=performance.now()-CARD.touchT;CARD.touchDown=false;if(!CARD.walk&&held<350)cardSelect();CARD.walk=false;});
+addEventListener('keydown',e=>{if(!CARD.on)return;if(['Enter','NumpadEnter','MediaPlayPause','AudioVolumeUp','AudioVolumeDown'].includes(e.key)||e.code==='Enter'){e.preventDefault();cardSelect();}if(e.key==='Escape')cardExit();},true);
 
 /* ---------- start / VR ---------- */
 $('#cover').style.backgroundImage="url('assets/banner-1.jpg')";
 async function start(){if(mode!=='cover')return;if(settings.heroes)loadHeroes();$('#cover').classList.add('hidden');Sound.init();try{await document.fonts?.ready;}catch(e){}mode='hub';enterHub();fade=1;fadeTarget=0;if(new URLSearchParams(location.search).get('party'))setTimeout(openParty,800);}
-$('#start').onclick=start;{const pc=new URLSearchParams(location.search).get('party');if(pc){const n=$('#inviteNote');n.style.display='block';n.textContent='You\'re invited to ride in party '+pc.toUpperCase()+'! Enter the park to join.';}}
+$('#start').onclick=start;$('#cardStart').onclick=()=>cardEnter();if(!(IS_MOBILE||'ontouchstart' in window)&&!new URLSearchParams(location.search).has('cardboard')){$('#cardStart').style.display='none';$('#cardNote').style.display='none';}{const pc=new URLSearchParams(location.search).get('party');if(pc){const n=$('#inviteNote');n.style.display='block';n.textContent='You\'re invited to ride in party '+pc.toUpperCase()+'! Enter the park to join.';}}
 // Only show ENTER VR on devices that can actually run immersive VR (no "VR NOT SUPPORTED" badge over phone controls)
 (async()=>{let ok=false;try{ok=!!navigator.xr&&await navigator.xr.isSessionSupported('immersive-vr');}catch(e){}if(ok){const vrBtn=VRButton.createButton(renderer);document.body.appendChild(vrBtn);}})();
 renderer.xr.addEventListener('sessionstart',()=>{hudMesh.visible=true;camera.rotation.set(0,0,0);start();Sound.init();});
@@ -2499,6 +2622,7 @@ renderer.setAnimationLoop(()=>{
  if(!renderer.xr.isPresenting&&!NOADAPT&&mode!=='cover'){fpsAcc+=rawDt;fpsN++;if(fpsAcc>2){const fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0;const old=dynScale;if(fps<40&&dynScale>.6)dynScale=Math.max(.6,dynScale-.1);else if(fps>57&&dynScale<1)dynScale=Math.min(1,dynScale+.05);if(old!==dynScale){applyQuality();if(dynScale<old&&!fpsLow){fpsLow=1;toast('GRAPHICS AUTO-TUNED FOR SMOOTH PLAY',2);}}}}
  pollXR();pollPad(dt);Party.update(dt);updateImports(dt);
  if(!renderer.xr.isPresenting)camera.rotation.set(lookY,lookX,0);
+ if(CARD.on&&!renderer.xr.isPresenting)cardUpdate(dt);tourUpdate(dt);
  if(W){if(mode==='hub'||mode==='station')updateWalk(dt);else if(mode==='ride')updateRide(dt);else if(mode==='flat')updateFlat(dt);else if(mode==='build'){updateBuild(dt);camera.rotation.set(0,0,0);}
   camera.getWorldPosition(camPos);W.update?.(dt,t,camPos);
   if(W.crowd){let train=null;if(W.deco)train={cars:W.deco.cars,s:W.deco.s,v:W.deco.track.speed(W.deco.s),track:W.deco.track};else if(W.cars)train={cars:W.cars,s:ride.s,v:mode==='ride'?ride.v:0,track:W.track,hide:p=>(mode==='ride'&&p.car===myCar()&&p.row<0)||Party.seatTaken(p.car,p.row)};W.crowd.update(dt,t,{cam:camPos,train});}
@@ -2513,16 +2637,18 @@ renderer.setAnimationLoop(()=>{
  // DOM + VR hud
  if(toastT>0){toastT-=dt;if(toastT<=0)$('#toast').style.opacity=0;}if(bigT>0){bigT-=dt;if(bigT<=0)$('#bigmsg').style.opacity=0;}if(vrToastT>0)vrToastT-=dt;
  hudTick-=dt;if(hudTick<=0){hudTick=.25;if(mode==='ride')updateStats();
-  if(renderer.xr.isPresenting){const nm=mode==='hub'?'GRAND CENTRAL':W?.def?.name?.toUpperCase()||'';
+  if(renderer.xr.isPresenting||CARD.on){const nm=mode==='hub'?'GRAND CENTRAL':W?.def?.name?.toUpperCase()||'';
    let b=mode==='hub'?`RELICS ${totalRelics()}/${RELIC_MAX()} · WALK INTO A PORTAL`:mode==='station'?'A BOARD · Y '+(arcade?'ARCADE':'SCENIC')+' · X SEAT':ride.state==='docked'?'A DISPATCH · X EXIT TRAIN':`${Math.round(ride.v*3.6)} KM/H · ${SEATS[seat].n.toUpperCase()} SEAT${arcade?' · '+score.toLocaleString()+' PTS ×'+clamp(combo,1,5):''}`;
-   let c=vrToastT>0?vrToast:mode==='hub'?'LEFT STICK WALK · RIGHT STICK TURN · TRIGGER SELECT':'B: GRAND CENTRAL · STICK CLICK: COMFORT';drawHud(nm,b,c);}}
+   let c=vrToastT>0?vrToast:mode==='hub'?'LEFT STICK WALK · RIGHT STICK TURN · TRIGGER SELECT':'B: GRAND CENTRAL · STICK CLICK: COMFORT';
+   if(CARD.on){if(mode==='hub')b='LOOK AT A PORTAL TO ENTER · HOLD TO WALK';else if(mode==='station')b=W?.nearFlat?'TAP TO RIDE '+W.nearFlat.name.toUpperCase():'LOOK DOWN FOR MENU · HOLD TO WALK';else if(mode==='ride'&&ride.state==='docked')b='TAP TO DISPATCH · LOOK DOWN FOR MENU';else if(mode==='flat')b='LOOK DOWN TO LEAVE THE RIDE';if(vrToastT<=0)c=CARD.auto?'🎬 RIDE TOUR ON · LOOK DOWN FOR MENU':'TAP: SELECT · HOLD: WALK · LOOK DOWN: MENU';}
+   drawHud(nm,b,c);}}
  Sound.tick(dt,W?.isUnder?.());
  sun.target.position.copy(rig.position);sun.position.copy(rig.position).addScaledVector(sunDir,240);
- if(renderer.xr.isPresenting||!Q.bloom)renderer.render(scene,camera);else{gradePass.uniforms.time.value=t%10;composer.render(dt);}
+ if(CARD.on&&!renderer.xr.isPresenting)cardRender();else if(renderer.xr.isPresenting||!Q.bloom)renderer.render(scene,camera);else{gradePass.uniforms.time.value=t%10;composer.render(dt);}
 });
 applyQuality();renderControls();initBuilderDOM();
 // test/debug hook (harmless in production)
-window.WOC={party:Party,heroDbg(){const s=(W?.crowd?.heroes?.slots||[]).find(s=>s.p);if(!s)return null;const tr=HERO.clips.walk.tracks.slice(0,4).map(t=>t.name);const bones=Object.keys(s.bones).slice(0,4);return {tr,bones,nb:s.mixer._bindings?.length,run:s.walk.isRunning(),w:s.walk.getEffectiveWeight(),iw:s.idle.getEffectiveWeight(),la:s.bones.mixamorigLeftArm?.quaternion.toArray().map(v=>+v.toFixed(3)),pos:s.o.position.toArray().map(v=>+v.toFixed(1)),p:[+s.p.x.toFixed(1),+s.p.z.toFixed(1)],sc:s.o.scale.x,vis:s.o.visible};},heroCam(d=2.6,i=0){const sl=(W?.crowd?.heroes?.slots||[]).filter(s=>s.p&&s.p.mode!=='sit');const s=sl[i];if(!s)return null;const p=s.p;p.pause=60;p.next=99;p.lookT=undefined;const fx=-Math.sin(p.yaw),fz=-Math.cos(p.yaw);rig.position.set(p.x+fx*d,(W.floorAt?W.floorAt(p.x,p.z):0)+1.6,p.z+fz*d);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,p.yaw+Math.PI);lookX=0;lookY=-.12;mode='frozen';return [p.role,p.mode];},park:{flats:()=>W?.flats?.map(f=>f.name),ride:i=>{flatRide={f:W.flats[i],t:0};mode='flat';renderControls();},build:()=>openBuilder(),act:a=>builderAct(a),stats:()=>CB.stats&&Object.fromEntries(Object.entries(CB.stats).map(([k,v])=>[k,+(+v).toFixed(2)])),seq:()=>CB.seq.join(','),cam:(x,z,yaw,y)=>{mode='frozen';rig.position.set(x,y??1.6,z);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,yaw);lookX=0;lookY=-.05;},coaster:()=>W?.coaster},impCam(i,d=3,h=1.5,ly=-.1){const it=IMPORTS.live[i];if(!it)return null;it.pause=1e9;it.w=0;const y=it.wrap.rotation.y,p=it.wrap.position;rig.position.set(p.x+Math.sin(y)*d,p.y+h,p.z+Math.cos(y)*d);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,y);lookX=0;lookY=ly;mode='frozen';return [it.e.file,+p.x.toFixed(1),+p.z.toFixed(1),it.wrap.visible];},imports:()=>({live:IMPORTS.live.map(i=>[i.e.file,+i.wrap.position.x.toFixed(1),+i.wrap.position.z.toFixed(1),+i.wrap.scale.x.toFixed(3),!!i.mixer,!!i.walk]),credits:IMPORTS.credits.length,pad:Pad.kind}),npcCam(key,d=2.2,h=1.45,ly=-.12,side=0){const P=W?.crowd?.people||[];const p=typeof key==='number'?P.filter(q=>!q.hidden&&q.role!=='rider'&&q.role!=='remote')[key]:P.find(q=>q.arch===ARCH[key]);if(!p)return null;let f=p.role==='follow'?p.parent:p;f.pause=600;f.next=999;p.lookT=undefined;f.lookT=undefined;const y=p.yaw+side,fx=-Math.sin(y),fz=-Math.cos(y);rig.position.set(p.x+fx*d,(W.floorAt?W.floorAt(p.x,p.z):0)+h,p.z+fz*d);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,y+Math.PI);lookX=0;lookY=ly;mode='frozen';return [p.role,p.mode,p.arch?.name||'',p.prop||''];},heroes:()=>({state:HERO.state,active:(W?.crowd?.heroes?.slots||[]).filter(s=>s.p).length}),go:id=>transition(()=>enterWorld(id)),hub:()=>transition(enterHub),board,dispatch,act,ride,settings,get W(){return W;},get mode(){return mode;},skip(f){ride.s=(W.st.s+f*W.track.L)%W.track.L;ride.dist=f*W.track.L;},tdbg(i){const t=targets[i];camera.getWorldPosition(_p);return t?{pop:t.pop,vis:t.g.visible,sc:t.g.scale.x,dist:t.g.position.distanceTo(_p),inScene:!!t.g.parent?.parent,rel:t.d-(ride.dist+(1.5-myCar())*CAR_GAP+.45),mode,state:ride.state}:null;},toTarget(i,ahead=25){const t=targets[i];if(!t)return null;const L=W.track.L,eye=(1.5-myCar())*CAR_GAP+.45,dd=t.d-ahead-eye;ride.dist=dd;ride.s=(W.st.s+dd)%L;ride.state='paused';return [t.kind,targets.length];},look(x,z,yaw,pitch){rig.position.x=x;rig.position.z=z;rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,yaw);lookX=0;lookY=pitch;},stats(){const t=W.track;return {L:Math.round(t.L),maxH:Math.round(t.maxHeight()),topKmh:Math.round(t.topSpeed()*3.6),tunnels:t.tag.filter(x=>x==='T').length};}};
+window.WOC={party:Party,heroDbg(){const s=(W?.crowd?.heroes?.slots||[]).find(s=>s.p);if(!s)return null;const tr=HERO.clips.walk.tracks.slice(0,4).map(t=>t.name);const bones=Object.keys(s.bones).slice(0,4);return {tr,bones,nb:s.mixer._bindings?.length,run:s.walk.isRunning(),w:s.walk.getEffectiveWeight(),iw:s.idle.getEffectiveWeight(),la:s.bones.mixamorigLeftArm?.quaternion.toArray().map(v=>+v.toFixed(3)),pos:s.o.position.toArray().map(v=>+v.toFixed(1)),p:[+s.p.x.toFixed(1),+s.p.z.toFixed(1)],sc:s.o.scale.x,vis:s.o.visible};},heroCam(d=2.6,i=0){const sl=(W?.crowd?.heroes?.slots||[]).filter(s=>s.p&&s.p.mode!=='sit');const s=sl[i];if(!s)return null;const p=s.p;p.pause=60;p.next=99;p.lookT=undefined;const fx=-Math.sin(p.yaw),fz=-Math.cos(p.yaw);rig.position.set(p.x+fx*d,(W.floorAt?W.floorAt(p.x,p.z):0)+1.6,p.z+fz*d);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,p.yaw+Math.PI);lookX=0;lookY=-.12;mode='frozen';return [p.role,p.mode];},card:{open:()=>cardOpenMenu(),enter:()=>cardEnter(),exit:()=>cardExit(),look:(x,y)=>{lookX=x;lookY=y;},menu:()=>CARD.menuOpen?cardMenu.children.map(c=>c.userData.act):null,do:a=>cardDo(a),state:()=>({on:CARD.on,auto:CARD.auto,hot:CARD.hot?.kind||null,mode,w:W?.id,laps:ride.laps,rs:ride.state})},park:{flats:()=>W?.flats?.map(f=>f.name),ride:i=>{flatRide={f:W.flats[i],t:0};mode='flat';renderControls();},build:()=>openBuilder(),act:a=>builderAct(a),stats:()=>CB.stats&&Object.fromEntries(Object.entries(CB.stats).map(([k,v])=>[k,+(+v).toFixed(2)])),seq:()=>CB.seq.join(','),cam:(x,z,yaw,y)=>{mode='frozen';rig.position.set(x,y??1.6,z);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,yaw);lookX=0;lookY=-.05;},coaster:()=>W?.coaster},impCam(i,d=3,h=1.5,ly=-.1){const it=IMPORTS.live[i];if(!it)return null;it.pause=1e9;it.w=0;const y=it.wrap.rotation.y,p=it.wrap.position;rig.position.set(p.x+Math.sin(y)*d,p.y+h,p.z+Math.cos(y)*d);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,y);lookX=0;lookY=ly;mode='frozen';return [it.e.file,+p.x.toFixed(1),+p.z.toFixed(1),it.wrap.visible];},imports:()=>({live:IMPORTS.live.map(i=>[i.e.file,+i.wrap.position.x.toFixed(1),+i.wrap.position.z.toFixed(1),+i.wrap.scale.x.toFixed(3),!!i.mixer,!!i.walk]),credits:IMPORTS.credits.length,pad:Pad.kind}),npcCam(key,d=2.2,h=1.45,ly=-.12,side=0){const P=W?.crowd?.people||[];const p=typeof key==='number'?P.filter(q=>!q.hidden&&q.role!=='rider'&&q.role!=='remote')[key]:P.find(q=>q.arch===ARCH[key]);if(!p)return null;let f=p.role==='follow'?p.parent:p;f.pause=600;f.next=999;p.lookT=undefined;f.lookT=undefined;const y=p.yaw+side,fx=-Math.sin(y),fz=-Math.cos(y);rig.position.set(p.x+fx*d,(W.floorAt?W.floorAt(p.x,p.z):0)+h,p.z+fz*d);rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,y+Math.PI);lookX=0;lookY=ly;mode='frozen';return [p.role,p.mode,p.arch?.name||'',p.prop||''];},heroes:()=>({state:HERO.state,active:(W?.crowd?.heroes?.slots||[]).filter(s=>s.p).length}),go:id=>transition(()=>enterWorld(id)),hub:()=>transition(enterHub),board,dispatch,act,ride,settings,get W(){return W;},get mode(){return mode;},skip(f){ride.s=(W.st.s+f*W.track.L)%W.track.L;ride.dist=f*W.track.L;},tdbg(i){const t=targets[i];camera.getWorldPosition(_p);return t?{pop:t.pop,vis:t.g.visible,sc:t.g.scale.x,dist:t.g.position.distanceTo(_p),inScene:!!t.g.parent?.parent,rel:t.d-(ride.dist+(1.5-myCar())*CAR_GAP+.45),mode,state:ride.state}:null;},toTarget(i,ahead=25){const t=targets[i];if(!t)return null;const L=W.track.L,eye=(1.5-myCar())*CAR_GAP+.45,dd=t.d-ahead-eye;ride.dist=dd;ride.s=(W.st.s+dd)%L;ride.state='paused';return [t.kind,targets.length];},look(x,z,yaw,pitch){rig.position.x=x;rig.position.z=z;rig.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,yaw);lookX=0;lookY=pitch;},stats(){const t=W.track;return {L:Math.round(t.L),maxH:Math.round(t.maxHeight()),topKmh:Math.round(t.topSpeed()*3.6),tunnels:t.tag.filter(x=>x==='T').length};}};
 </script>
 </body>
 </html>

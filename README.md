@@ -1,4 +1,4 @@
-# World of Coasters · v0.9 "Funland Park"
+# World of Coasters · v0.10 "Cardboard VR"
 
 PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build step.
 
@@ -21,6 +21,26 @@ PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build ste
 | 09 | Atlantis Deep Dive (Ocean World) | Sunset pier, 100 m dive through the surface, Gate of Atlantis, glowing sunken city, hydro-jet launch |
 
 Portal 10, **The Ultimate World Tour**, is still marked Coming Soon.
+
+## v0.10 changes
+
+**Cardboard VR: play on a phone in a basic headset.** Google Cardboard, the plastic "VR Box" viewers and any other phone-holder 360° headset now work on iPhone and Android. No app or WebXR support is needed.
+- **How to start:** on a phone, tap **📱 PLAY IN CARDBOARD VR** on the title screen, or **📱 Cardboard VR** in Grand Central. Then put the phone in the viewer sideways.
+  - The game goes full screen and locks to landscape where the phone allows it.
+  - iPhones ask once for motion access.
+- **Picture:** the image is split into two eyes in true stereo, pre-warped for the viewer's lenses so it looks straight through them. You can turn lens correction off under **Comfort** for viewers without lenses.
+- **Head tracking:** the phone's motion sensors track your head, so you just look around.
+- **Controls with no controller:**
+  - **Look + tap** (the Cardboard button, a tap on the screen, or a Bluetooth clicker) selects whatever the dot in the middle is on.
+  - **Look and hold still:** a gold ring fills and selects on its own, so the game also works with a no-button viewer.
+  - **Look at a portal** in Grand Central to go to that world.
+  - **Tap** dispatches the train, gets on a Funland Park ride you're standing at, or fires in arcade mode.
+  - **Tap and hold** walks in the direction you're looking.
+  - **Look down** to open a big menu. It has Board, Scenic/Arcade, Seat, Funland Park, Next World, Ride Tour, Grand Central, Re-center and Exit Cardboard. Look back up to close it.
+- **Exiting:** use the phone's back button, Esc, or **Exit Cardboard** in the menu.
+- **On-screen help:** the in-headset bar shows what to do next in every situation.
+
+**Ride Tour (watch mode).** Turn on **🎬 Ride Tour** (in Grand Central or the Cardboard menu) to sit back and watch: it boards the train, rides, then moves on to the next world by itself, round and round. It works in Cardboard, on a computer and on a phone, so it's also good for demos and screens at events.
 
 ## v0.9 changes
 
