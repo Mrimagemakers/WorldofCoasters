@@ -22,6 +22,21 @@ PenGame Publishing · Three.js r160 + WebXR · single `index.html`, no build ste
 
 Portal 10, **The Ultimate World Tour**, is still marked Coming Soon.
 
+## v0.11 changes (sharper picture + smart glasses)
+
+**Sharper, cleaner picture**
+- The auto-tuner that lowers resolution when the frame rate dips now stops at 80% (it used to drop to 60%, which made scenes look smeared on slower devices).
+- Higher pixel ratios on every quality tier, including phones (up to 1.75×) and Performance mode (1.25×).
+- A contrast-adaptive sharpening pass in the color grade, with the film grain removed and a tighter bloom so lights glow without blurring edges.
+- Every texture uses the GPU's full anisotropic filtering, so floors, tracks and signs stay crisp at shallow angles.
+- Generated textures are 512 px on desktop (bricks 1024 px). New paving-slab texture for the station platforms replaces the old cloudy-looking stone.
+- 4096 shadow maps on desktop Ultra, about 28% less haze so distant landmarks read clearly, and the photo sky backdrops are sharpened in the shader.
+
+**Smart glasses**
+- **🕶 Play on Smart Glasses** (cover screen and Grand Central controls) for display glasses such as XREAL, VITURE, Rokid and RayNeo. Plug the glasses into a laptop or phone, turn on the glasses' 3D/SBS mode, and the game renders true stereo side-by-side. Look with the mouse, a drag, or a gamepad's right stick; walk with WASD or the left stick; click, Enter or Ⓐ selects what the reticle is on; Start opens the menu; Esc exits.
+- **Comfort → Smart glasses 3D format:** Half SBS (most glasses, 1920×1080) or Full SBS (3840×1080 mode).
+- AR-only headsets and glasses that support WebXR `immersive-ar` but not `immersive-vr` (Android XR glasses, Magic Leap 2, Snap Spectacles) get an **ENTER XR GLASSES** button. Apple Vision Pro and Quest keep using **ENTER VR**.
+
 ## v0.10 changes
 
 **Cardboard VR: play on a phone in a basic headset.** Google Cardboard, the plastic "VR Box" viewers and any other phone-holder 360° headset now work on iPhone and Android. No app or WebXR support is needed.
